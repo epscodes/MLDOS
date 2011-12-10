@@ -1,0 +1,8 @@
+#! /bin/bash
+make clean
+make
+ar rcs libcavity.a *.o
+make clean 
+cp Resonator.h ../AnalyzeStructure/
+cp Resonator.h ../ComputeQ/
+cp Resonator.h ../FindOpt/

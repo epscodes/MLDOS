@@ -1,0 +1,25 @@
+#! /bin/bash
+
+export PETSC_DIR=/home/xdliang/MyLocal/petsc/petsc-3.1-p8
+export PETSC_ARCH=arch-opt
+export CavityLibPath=$PWD/CodesForLibrary
+export NloptLibPath=/usr/local/lib
+
+#/home/xdliang/MyLocal/nlopt_0/.libs
+#/home/xdliang/Desktop/Cavity/CleanCodes/nlopt-modify/.libs
+
+
+cd CodesForLibrary
+bash makelibcavity
+
+cd ../AnalyzeStructure
+make clean
+make
+
+cd ../ComputeQ
+make clean
+#make
+
+cd ../FindOpt
+make clean
+#make
