@@ -3,6 +3,9 @@ make clean
 make
 ar rcs libcavity.a *.o
 make clean 
-cp Resonator.h ../AnalyzeStructure/
-cp Resonator.h ../ComputeQ/
-cp Resonator.h ../FindOpt/
+
+cp Resonator.h ../MLDOS/
+
+#cp Resonator.h ../AnalyzeStructure/
+#cp Resonator.h ../ComputeQ/
+#cp Resonator.h ../FindOpt/

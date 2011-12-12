@@ -62,6 +62,17 @@ PetscErrorCode  OutputMat(MPI_Comm comm, Mat A, const char *filenameComm, const 
 
 PetscErrorCode RetrieveVecPoints(Vec x, int Npt, int *Pos, double *ptValues);
 
+PetscErrorCode MyCheckAndOutputInt(PetscTruth flg, int CmdVar, const char *strCmdVar, const char *strCmdVarDetail);
+
+PetscErrorCode MyCheckAndOutputDouble(PetscTruth flg, double CmdVar, const char *strCmdVar, const char *strCmdVarDetail);
+
+PetscErrorCode MyCheckAndOutputChar(PetscTruth flg, char *CmdVar, const char *strCmdVar, const char *strCmdVarDetail);
+
+
+
+PetscErrorCode GetIntParaCmdLine(int *ptCmdVar, const char *strCmdVar, const char *strCmdVarDetail);
+
+
 // from ResonatorSolver.c
 double ResonatorSolver(int Mxyz, double *epsopt, double *grad, void *data);
 

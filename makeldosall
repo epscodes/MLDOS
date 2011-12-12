@@ -12,14 +12,12 @@ export NloptLibPath=/usr/local/lib
 cd CodesForLibrary
 bash makelibcavity
 
-cd ../AnalyzeStructure
+cd ../MLDOS
 make clean
 make
 
-cd ../ComputeQ
-make clean
-#make
+#cd ../AnalyzeStructure make clean make
 
-cd ../FindOpt
-make clean
-#make
+#cd ../ComputeQ make clean #make
+
+#cd ../FindOpt make clean #make
