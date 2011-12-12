@@ -46,15 +46,7 @@ double ResonatorSolver(int Mxyz,double *epsopt, double *grad, void *data)
   double hxyz = (Nz==1)*hx*hy + (Nz>1)*hx*hy*hz;
 
   // copy epsopt to epsSReal;
-  int j, ns, ne;
-  ierr = VecGetOwnershipRange(epsSReal,&ns,&ne);
-  for(j=ns;j<ne;j++)
-    { ierr=VecSetValue(epsSReal,j,epsopt[j],INSERT_VALUES); 
-      CHKERRQ(ierr); }
-
-  ierr = VecAssemblyBegin(epsSReal); CHKERRQ(ierr);
-  ierr = VecAssemblyEnd(epsSReal);  CHKERRQ(ierr);
-
+  ierr=ArrayToVec(epsopt, epsSReal); CHKERRQ(ierr);
  
 
   // Update the diagonals of M Matrix;
@@ -198,22 +190,8 @@ double ResonatorSolver(int Mxyz,double *epsopt, double *grad, void *data)
    // vgrad =A'*epsgrad; A' is the restriction matrix; Mapped to the small grid;
    ierr = MatMultTranspose(A,epsgrad,vgrad);CHKERRQ(ierr);   
 
-   // scatter vgrad to vgradlocal;
-   ierr =VecScatterCreate(vgrad,from,vgradlocal,to,&scatter); CHKERRQ(ierr);
-   VecScatterBegin(scatter,vgrad,vgradlocal,INSERT_VALUES,SCATTER_FORWARD);
-   VecScatterEnd(scatter,vgrad,vgradlocal,INSERT_VALUES,SCATTER_FORWARD);
-   ierr =VecScatterDestroy(scatter); CHKERRQ(ierr);
-
-   // copy from vgradlocal to grad;
-   double *ptvgradlocal;
-   ierr =VecGetArray(vgradlocal,&ptvgradlocal);CHKERRQ(ierr);
-
-   int i;
-   for(i=0;i<Mxyz;i++)
-     grad[i] = ptvgradlocal[i];
-
-   ierr =VecRestoreArray(vgradlocal,&ptvgradlocal);CHKERRQ(ierr);   
-
+// copy vgrad (distributed vector) to a regular array grad;
+   ierr = VecToArray(vgrad,grad,scatter,from,to,vgradlocal,Mxyz);
   }
 
   count++;
