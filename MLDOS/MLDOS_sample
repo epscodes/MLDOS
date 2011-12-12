@@ -1,0 +1,51 @@
+#!/bin/bash
+
+# this is a sample to run MLDOS program;
+Nx=168; Ny=168; Nz=1; Mx=136; My=136; Mz=1; Mzslab=1; Npmlx=32; Npmly=32; Npmlz=0;
+
+BCPeriod=3; bxl=+1; bxu=+1; byl=+1; byu=+1; bzl=+1;bzu=+1;
+Jdirection=3; LowerPML=0;
+epsair=1.0; epssub=1.0; 
+hx=2.001410953676523e-02; omega=6.28318530717959e+00; Qabs=1e+5;RRT=1e-25;
+
+initialdata="vacuuminput.txt";
+filenameComm="new";
+summary="summary.txt";
+filenameSummary="$filenameComm$summary";
+
+
+Job=1;
+
+if [ $Job -eq 1 ]
+then
+    # for FindOpt Job=1
+    maxeval=5;
+    maxtime=72000; #don't use scientific notation;
+    mynloptalg=24; # 11 for LBFGS and 24 for MMA;
+    mylb=0;
+    myub=11.4;
+elif [ $Job -eq 2 ]
+then
+    # for AnalyzeStructure Job=2
+    Linear=1;
+    Eig=0;
+    maxeigit=10;
+elif [ $Job -eq 3 ]
+then 
+    # for ComputeQ Job=3;
+    mylb=6.25;
+    myub=$omega;
+    optmax=0;
+    ldoscenter=8e+4;
+    mynloptalg=34;
+    maxeval=100;
+    maxtime=72000;
+else
+    echo "Choose correct Job category"
+fi
+
+
+
+mpirun -np 4 ~/MyCodes/CavityPETScCodes/MLDOS/MLDOSOpt -Nx $Nx -Ny $Ny -Nz $Nz -Mx $Mx -My $My -Mz $Mz -Mzslab $Mzslab -Npmlx $Npmlx -Npmly $Npmly -Npmlz $Npmlz -BCPeriod $BCPeriod -bxl $bxl -bxu $bxu  -byl $byl -byu $byu -bzl $bzl -bzu $bzu -Jdirection $Jdirection -LowerPML $LowerPML -hx $hx -omega $omega -Qabs $Qabs -epsair $epsair -epssub $epssub -RRT $RRT -initialdata $initialdata -filenameComm $filenameComm -Linear $Linear -Eig $Eig -maxeigit $maxeigit -maxeval $maxeval -maxtime $maxtime -mynloptalg $mynloptalg -mylb $mylb -myub $myub -optmax $optmax -ldoscenter $ldoscenter -Job $Job -pc_factor_mat_solver_package mumps 
+
+
