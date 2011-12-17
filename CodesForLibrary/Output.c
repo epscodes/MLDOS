@@ -77,7 +77,7 @@ PetscErrorCode MyCheckAndOutputInt(PetscTruth flg, int CmdVar, const char *strCm
       SETERRQ(PETSC_ERR_ARG_WRONG,myerrmsg);
     }
   else
-    {PetscPrintf(PETSC_COMM_WORLD,"%s is %d \n",strCmdVarDetail,CmdVar);}
+    {PetscPrintf(PETSC_COMM_WORLD,"------%s is %d \n",strCmdVarDetail,CmdVar);}
   PetscFunctionReturn(0);
 }
 
@@ -93,7 +93,7 @@ PetscErrorCode MyCheckAndOutputDouble(PetscTruth flg, double CmdVar, const char 
       SETERRQ(PETSC_ERR_ARG_WRONG,myerrmsg);
     }
   else
-    {PetscPrintf(PETSC_COMM_WORLD,"%s is %g \n",strCmdVarDetail,CmdVar);}
+    {PetscPrintf(PETSC_COMM_WORLD,"------%s is %g \n",strCmdVarDetail,CmdVar);}
   PetscFunctionReturn(0);
 }
 
@@ -110,7 +110,7 @@ PetscErrorCode MyCheckAndOutputChar(PetscTruth flg, char *CmdVar, const char *st
       SETERRQ(PETSC_ERR_ARG_WRONG,myerrmsg);
     }
   else
-    {PetscPrintf(PETSC_COMM_WORLD,"%s is %s \n",strCmdVarDetail,CmdVar);}
+    {PetscPrintf(PETSC_COMM_WORLD,"------%s is %s \n",strCmdVarDetail,CmdVar);}
   PetscFunctionReturn(0);
 }
 

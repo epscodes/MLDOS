@@ -38,7 +38,7 @@ int main(int argc, char **argv)
   PetscOptionsGetInt(PETSC_NULL,"-Npmlz",&Npmlz,&flg);  MyCheckAndOutputInt(flg,Npmlz,"Npmlz","Npmlz");
 
   Nxyz = Nx*Ny*Nz;
-  Mxyz = Mx*My*Mz;
+  Mxyz = Mx*My*((Mzslab==0)?Mz:1);
 
   int BCPeriod, Jdirection, LowerPML;
   int bx[2], by[2], bz[2];
@@ -130,7 +130,6 @@ int main(int argc, char **argv)
   muinv = (double *) malloc(sizeof(double)*6*Nxyz);
   int add=0;
   AddMuAbsorption(muinv,muinvpml,Qabs,Nxyz,add);
- 
   ierr = VecDestroy(muinvpml); CHKERRQ(ierr);  
 
   /*---------- Define PML eps vectors: epspml---------- */  

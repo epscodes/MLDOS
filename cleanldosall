@@ -11,11 +11,11 @@ export NloptLibPath=/usr/local/lib
 cd CodesForLibrary
 make clean
 
-cd ../AnalyzeStructure
+cd ../MLDOS/
 make clean
 
-cd ../ComputeQ
-make clean
+#cd ../AnalyzeStructure make clean
 
-cd ../FindOpt
-make clean
+#cd ../ComputeQ make clean
+
+#cd ../FindOpt make clean

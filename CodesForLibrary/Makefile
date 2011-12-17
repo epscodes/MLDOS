@@ -2,7 +2,7 @@ all: MoperatorGeneral.o SourceGeneration.o PML.o Eps.o MathTools.o Output.o ldos
 
 include ${PETSC_DIR}/conf/variables
 include ${PETSC_DIR}/conf/rules
-CLEANFILES =  Moperator.o MoperatorGeneral.o SourceGeneration.o PML.o EPS.o MathTools.o Output.o ldos.o  ResonatorSolver.o EigenSolver.o
+CLEANFILES =  MoperatorGeneral.o SourceGeneration.o PML.o EPS.o MathTools.o Output.o ldos.o  ResonatorSolver.o EigenSolver.o
 
 
 MoperatorGeneral: MoperatorGeneral.o

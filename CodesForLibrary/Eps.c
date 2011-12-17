@@ -45,9 +45,10 @@ PetscErrorCode myinterp(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, int Nx
   int i;
   int Nc = 3; //modified;
 
-     
+  int Mxyz=Mx*My*((Mzslab==0)?Mz:1); 
+ 
   ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE,
-			 Nx*Ny*Nz*6, Mx*My*Mz,
+			 Nx*Ny*Nz*6, Mxyz,
 			 nz, NULL, nz, NULL, &A); CHKERRQ(ierr);
      
   ierr = MatGetOwnershipRange(A, &ns, &ne); CHKERRQ(ierr);
@@ -74,8 +75,13 @@ PetscErrorCode myinterp(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, int Nx
     zd = (iz-Nzo) + (ic!= 2)*shift;
     izd = ceil(zd - 0.5);
     if (izd < 0 || izd >= Mz) continue;
+
+    if(Mzslab!=0)
+      id = (ixd*My + iyd);
+    else
+      id = (ixd*My + iyd)*Mz + izd;
 	  
-    id = (ixd*My + iyd)*Mz + izd*(!Mzslab); //modification here to combine both cases;
+   
     ierr = MatSetValue(A, i, id, 1.0, INSERT_VALUES); CHKERRQ(ierr);
   }
 
