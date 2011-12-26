@@ -5,6 +5,7 @@ ar rcs libcavity.a *.o
 make clean 
 
 cp Resonator.h ../MLDOS/
+cp Resonator.h ../MLDOSRHS/
 
 #cp Resonator.h ../AnalyzeStructure/
 #cp Resonator.h ../ComputeQ/
