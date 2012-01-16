@@ -20,6 +20,10 @@ cd ../MLDOSRHS
 make clean
 make
 
+cd ../MLDOSPOLXY
+make clean
+make
+
 #cd ../AnalyzeStructure make clean make
 
 #cd ../ComputeQ make clean #make

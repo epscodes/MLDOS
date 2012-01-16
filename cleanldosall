@@ -17,6 +17,9 @@ make clean
 cd ../MLDOSRHS/
 make clean
 
+cd ../MLDOSPOLXY/
+make clean
+
 #cd ../AnalyzeStructure make clean
 
 #cd ../ComputeQ make clean
