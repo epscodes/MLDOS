@@ -72,21 +72,35 @@ int main(int argc, char **argv)
   sigmay = pmlsigma(RRT,Npmly*hy);
   sigmaz = pmlsigma(RRT,Npmlz*hz);  
 
-
-
-
-
-
   char initialdata[PETSC_MAX_PATH_LEN], filenameComm[PETSC_MAX_PATH_LEN];
   PetscOptionsGetString(PETSC_NULL,"-initialdata",initialdata,PETSC_MAX_PATH_LEN,&flg); MyCheckAndOutputChar(flg,initialdata,"initialdata","Inputdata file");
   PetscOptionsGetString(PETSC_NULL,"-filenameComm",filenameComm,PETSC_MAX_PATH_LEN,&flg); MyCheckAndOutputChar(flg,filenameComm,"filenameComm","Output filenameComm");
 
- 
 
+  // add cx, cy, cz to indicate where the diapole current is;
+
+  int cx, cy, cz;
+  PetscOptionsGetInt(PETSC_NULL,"-cx",&cx,&flg); 
+  if (!flg)
+    {cx=(LowerPML)*floor(Nx/2); PetscPrintf(PETSC_COMM_WORLD,"cx is %d by default \n",cx);}
+  else
+    {PetscPrintf(PETSC_COMM_WORLD,"the current poisiont cx is %d \n",cx);}
   
+
+  PetscOptionsGetInt(PETSC_NULL,"-cy",&cy,&flg); 
+  if (!flg)
+    {cy=(LowerPML)*floor(Ny/2); PetscPrintf(PETSC_COMM_WORLD,"cy is %d by default \n",cy);}
+ else
+    {PetscPrintf(PETSC_COMM_WORLD,"the current poisiont cy is %d \n",cy);}
   
+
+  PetscOptionsGetInt(PETSC_NULL,"-cz",&cz,&flg); 
+  if (!flg)
+    {cz=(LowerPML)*floor(Nz/2); PetscPrintf(PETSC_COMM_WORLD,"cz is %d by default \n",cz);}
+  else
+    {PetscPrintf(PETSC_COMM_WORLD,"the current poisiont cz is %d \n",cz);}
+    
   /*--------------------------------------------------------*/
-
 
   /*--------------------------------------------------------*/
 
@@ -96,10 +110,14 @@ int main(int argc, char **argv)
   ImagIMat(PETSC_COMM_WORLD, &D,Nxyz);
 
   Vec J;
+  ierr = VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, 6*Nxyz, &J);CHKERRQ(ierr);
+  ierr = PetscObjectSetName((PetscObject) J, "Source");CHKERRQ(ierr);
+  VecSet(J,0.0); //initialization;
+
   if (Jdirection == 1)
-    SourceSingleSetX(PETSC_COMM_WORLD, &J, Nx, Ny, Nz, (LowerPML)*floor(Nx/2), (LowerPML)*floor(Ny/2), (LowerPML)*floor(Nz/2),1.0/hxyz);
+    SourceSingleSetX(PETSC_COMM_WORLD, J, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
   else if (Jdirection == 3)
-    SourceSingleSetZ(PETSC_COMM_WORLD, &J, Nx, Ny, Nz,(LowerPML)*floor(Nx/2), (LowerPML)*floor(Ny/2), (LowerPML)*floor(Nz/2),1.0/hxyz);
+    SourceSingleSetZ(PETSC_COMM_WORLD, J, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
   else
     PetscPrintf(PETSC_COMM_WORLD," Please specify correct direction of current: x (1) or z (3)\n "); 
 

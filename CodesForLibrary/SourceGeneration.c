@@ -6,7 +6,7 @@
 
 #undef __FUNCT__ 
 #define __FUNCT__ "SourceSingleSetX"
-PetscErrorCode SourceSingleSetX(MPI_Comm comm, Vec *Jout, int Nx, int Ny, int Nz, int scx, int scy, int scz, double amp)
+PetscErrorCode SourceSingleSetX(MPI_Comm comm, Vec J, int Nx, int Ny, int Nz, int scx, int scy, int scz, double amp)
 {
   PetscErrorCode ierr;
 
@@ -14,31 +14,50 @@ PetscErrorCode SourceSingleSetX(MPI_Comm comm, Vec *Jout, int Nx, int Ny, int Nz
   Nxyz = Nx*Ny*Nz;
   pos = scx*Ny*Nz + scy*Nz + scz;
 
-  Vec J;
-  ierr = VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, 6*Nxyz, &J);CHKERRQ(ierr);
-  ierr = PetscObjectSetName((PetscObject) J, "Source");CHKERRQ(ierr);
-  VecSet(J,0.0);
-  VecAssemblyBegin(J);
-  VecAssemblyEnd(J); 
-
+  //VecSet(J,0.0);
 
   int ns, ne;
   ierr = VecGetOwnershipRange(J, &ns, &ne); CHKERRQ(ierr);
   
   if ( ns < pos+1 && ne > pos)
-    ierr=VecSetValue(J,pos, amp, INSERT_VALUES); CHKERRQ(ierr); //Source in the x-direction
-  
+    {
+      ierr=VecSetValue(J,pos, amp, ADD_VALUES); CHKERRQ(ierr); //Source in the x-direction
+    }
   ierr = VecAssemblyBegin(J);CHKERRQ(ierr);
   ierr = VecAssemblyEnd(J); CHKERRQ(ierr);
 
-  *Jout = J;
+  PetscFunctionReturn(0);
+}
+
+#undef __FUNCT__ 
+#define __FUNCT__ "SourceSingleSetY"
+PetscErrorCode SourceSingleSetY(MPI_Comm comm, Vec J, int Nx, int Ny, int Nz, int scx, int scy, int scz, double amp)
+{
+  PetscErrorCode ierr;
+
+  int pos, Nxyz; 
+  Nxyz = Nx*Ny*Nz;
+  pos = scx*Ny*Nz + scy*Nz + scz;
+
+  //VecSet(J,0.0);
+
+  int ns, ne;
+  ierr = VecGetOwnershipRange(J, &ns, &ne); CHKERRQ(ierr);
+  
+  if ( ns < pos+Nxyz+1 && ne > pos + Nxyz)
+    {
+      ierr=VecSetValue(J,pos+Nxyz, amp, ADD_VALUES); CHKERRQ(ierr); //Source in the y-direction
+    }
+  ierr = VecAssemblyBegin(J);CHKERRQ(ierr);
+  ierr = VecAssemblyEnd(J); CHKERRQ(ierr);
+
   PetscFunctionReturn(0);
 }
 
 
 #undef __FUNCT__ 
 #define __FUNCT__ "SourceSingleSetZ"
-PetscErrorCode SourceSingleSetZ(MPI_Comm comm, Vec *Jout, int Nx, int Ny, int Nz, int scx, int scy, int scz, double amp)
+PetscErrorCode SourceSingleSetZ(MPI_Comm comm, Vec J, int Nx, int Ny, int Nz, int scx, int scy, int scz, double amp)
 {
   PetscErrorCode ierr;
 
@@ -46,23 +65,17 @@ PetscErrorCode SourceSingleSetZ(MPI_Comm comm, Vec *Jout, int Nx, int Ny, int Nz
   Nxyz = Nx*Ny*Nz;
   pos = scx*Ny*Nz + scy*Nz + scz;
 
-  Vec J;
-  ierr = VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, 6*Nxyz, &J);CHKERRQ(ierr);
-  ierr = PetscObjectSetName((PetscObject) J, "Source");CHKERRQ(ierr);
-  VecSet(J,0.0);
-  VecAssemblyBegin(J);
-  VecAssemblyEnd(J); 
+  //VecSet(J,0.0);
 
   int ns, ne;
   ierr = VecGetOwnershipRange(J, &ns, &ne); CHKERRQ(ierr);
   
   if ( ns < pos+2*Nxyz+1 && ne > pos + 2*Nxyz)
-      ierr = VecSetValue(J,pos+2*Nxyz, amp, INSERT_VALUES); CHKERRQ(ierr);
+      ierr = VecSetValue(J,pos+2*Nxyz, amp, ADD_VALUES); CHKERRQ(ierr);
   
   ierr = VecAssemblyBegin(J);CHKERRQ(ierr);
   ierr = VecAssemblyEnd(J); CHKERRQ(ierr);
 
-  *Jout = J;
   PetscFunctionReturn(0);
 }
 
@@ -156,3 +169,4 @@ PetscErrorCode SourceBlock(MPI_Comm comm, Vec *bout, int Nx, int Ny, int Nz, dou
   PetscFunctionReturn(0);
   
 }
+

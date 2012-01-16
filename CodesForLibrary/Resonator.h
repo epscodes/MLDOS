@@ -4,9 +4,11 @@
 PetscErrorCode MoperatorGeneral(MPI_Comm comm, Mat *Mout, int Nx, int Ny, int Nz, double hx, double hy, double hz, int bx[2], int by[2], int bz[2], double *muinv,int DimPeriod);
 
 // from SourceGeneration.c
-PetscErrorCode SourceSingleSetX(MPI_Comm comm, Vec *Jout, int Nx, int Ny, int Nz, int scx, int scy, int scz, double amp);
+PetscErrorCode SourceSingleSetX(MPI_Comm comm, Vec J, int Nx, int Ny, int Nz, int scx, int scy, int scz, double amp);
 
-PetscErrorCode SourceSingleSetZ(MPI_Comm comm, Vec *Jout, int Nx, int Ny, int Nz, int scx, int scy, int scz, double amp);
+PetscErrorCode SourceSingleSetY(MPI_Comm comm, Vec J, int Nx, int Ny, int Nz, int scx, int scy, int scz, double amp);
+
+PetscErrorCode SourceSingleSetZ(MPI_Comm comm, Vec J, int Nx, int Ny, int Nz, int scx, int scy, int scz, double amp);
 
 
 PetscErrorCode SourceDuplicate(MPI_Comm comm, Vec *bout, int Nx, int Ny, int Nz, int scx, int scy, int scz, double amp);
@@ -84,6 +86,10 @@ double ldosdiff(int numofvar, double *epsopt, double *grad, void *data);
 PetscErrorCode EigenSolver(void *data, int Linear, int Eig, int maxeigit);
 PetscErrorCode RayleighQuotient(Mat M, Vec diagB, Vec x, Vec b, Vec vR, Mat D, Vec tmpa, Vec tmpb, int N, int i);
 
+// from ResonatorSolverRHS.c
+double ResonatorSolverRHS(int Mxyz,double *epsopt, double *grad, void *data);
+
+
 // datatype used for optimization of dielectric structure;
 typedef struct { 
   int SNx, SNy, SNz; 
@@ -110,3 +116,31 @@ typedef struct {
   VecScatter Sscatter;
   char *SfilenameComm;
 } myfundatatypeq;
+
+// datatype used for optimization of dielectric structure with mullitple RHS;
+typedef struct { 
+  int SNx, SNy, SNz, Sclx,Scly,Sclz, Sncx, Sncy, Sncz, SJdirection; 
+  double Shx, Shy, Shz;
+  double Somega;
+  KSP Sksp;
+  Vec SepspmlQ, Sepscoef, Sepsmedium, SepsC, SepsCi, SepsP, Sx, Scglambda, SJ, Sb, SweightedJ, SvR, SepsSReal, Sepsgrad, Svgrad, Svgradlocal, Stmp, Stmpa, Stmpb;
+  Mat SA, SD, SM;
+  IS Sfrom, Sto;
+  VecScatter Sscatter;
+  char *SfilenameComm;
+} myfundataRHStype;
+
+// dataype used for optimization of frequency with multiple RHS;
+typedef struct { 
+  int SNx, SNy, SNz,Sclx, Scly, Sclz, Sncx,Sncy,Sncz, SJdirection; 
+  double Shx, Shy, Shz;
+  double Somega, Ssparedouble;
+  double *Sspareptdouble;
+  KSP Sksp;
+  Vec SepspmlQ, Sepscoef, SepsC, SepsCi, SepsP, Sx, Scglambda, SJ, Sb, SweightedJ, SvR, SepsSReal, Sepsgrad, Svgrad, Svgradlocal, Stmp, Stmpa, Stmpb;
+  Mat SA, SD, SM;
+  IS Sfrom, Sto;
+  VecScatter Sscatter;
+  char *SfilenameComm;
+} myfundataRHStypeq;
+

@@ -20,8 +20,9 @@ int main(int argc, char **argv)
   PetscInitialize(&argc, &argv, PETSC_NULL, PETSC_NULL);
   PetscPrintf(PETSC_COMM_WORLD,"--------Initializing------ \n");
   PetscErrorCode ierr;
-
   PetscTruth flg;
+  
+  mma_verbose=1;
 
   /*-------------------------------------------------*/
   int Nx,Ny,Nz,Mx,My,Mz,Mzslab, Npmlx,Npmly,Npmlz, Nxyz,Mxyz;
@@ -72,20 +73,18 @@ int main(int argc, char **argv)
   sigmay = pmlsigma(RRT,Npmly*hy);
   sigmaz = pmlsigma(RRT,Npmlz*hz);  
 
-
-
-
-
-
   char initialdata[PETSC_MAX_PATH_LEN], filenameComm[PETSC_MAX_PATH_LEN];
   PetscOptionsGetString(PETSC_NULL,"-initialdata",initialdata,PETSC_MAX_PATH_LEN,&flg); MyCheckAndOutputChar(flg,initialdata,"initialdata","Inputdata file");
   PetscOptionsGetString(PETSC_NULL,"-filenameComm",filenameComm,PETSC_MAX_PATH_LEN,&flg); MyCheckAndOutputChar(flg,filenameComm,"filenameComm","Output filenameComm");
 
- 
+  int clx,cly,clz, ncx, ncy, ncz;
+  PetscOptionsGetInt(PETSC_NULL,"-clx",&clx,&flg);  MyCheckAndOutputInt(flg,clx,"clx","clx");
+ PetscOptionsGetInt(PETSC_NULL,"-cly",&cly,&flg);  MyCheckAndOutputInt(flg,cly,"cly","cly");
+ PetscOptionsGetInt(PETSC_NULL,"-clz",&clz,&flg);  MyCheckAndOutputInt(flg,clz,"clz","clz");
 
-  
-  
-  /*--------------------------------------------------------*/
+ PetscOptionsGetInt(PETSC_NULL,"-ncx",&ncx,&flg);  MyCheckAndOutputInt(flg,ncx,"ncx","ncx");
+ PetscOptionsGetInt(PETSC_NULL,"-ncy",&ncy,&flg);  MyCheckAndOutputInt(flg,ncy,"ncy","ncy");
+ PetscOptionsGetInt(PETSC_NULL,"-ncz",&ncz,&flg);  MyCheckAndOutputInt(flg,ncz,"ncz","ncz");
 
 
   /*--------------------------------------------------------*/
@@ -96,17 +95,11 @@ int main(int argc, char **argv)
   ImagIMat(PETSC_COMM_WORLD, &D,Nxyz);
 
   Vec J;
-  if (Jdirection == 1)
-    SourceSingleSetX(PETSC_COMM_WORLD, &J, Nx, Ny, Nz, (LowerPML)*floor(Nx/2), (LowerPML)*floor(Ny/2), (LowerPML)*floor(Nz/2),1.0/hxyz);
-  else if (Jdirection == 3)
-    SourceSingleSetZ(PETSC_COMM_WORLD, &J, Nx, Ny, Nz,(LowerPML)*floor(Nx/2), (LowerPML)*floor(Ny/2), (LowerPML)*floor(Nz/2),1.0/hxyz);
-  else
-    PetscPrintf(PETSC_COMM_WORLD," Please specify correct direction of current: x (1) or z (3)\n "); 
+  ierr = VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, 6*Nxyz, &J);CHKERRQ(ierr);
+  ierr = PetscObjectSetName((PetscObject) J, "Source");CHKERRQ(ierr);
 
   Vec b; // b= i*omega*J;
   ierr = VecDuplicate(J,&b);CHKERRQ(ierr);
-  ierr = MatMult(D,J,b);CHKERRQ(ierr);
-  VecScale(b,omega);
 
   /*-------Get the weight vector ------------------*/
   Vec weight;
@@ -119,7 +112,7 @@ int main(int argc, char **argv)
 
   Vec weightedJ;
   ierr = VecDuplicate(J,&weightedJ); CHKERRQ(ierr);
-  ierr = VecPointwiseMult(weightedJ,J,weight);
+  //ierr = VecPointwiseMult(weightedJ,J,weight);
 
   Vec vR;
   ierr = VecDuplicate(J,&vR); CHKERRQ(ierr);
@@ -302,8 +295,8 @@ int main(int argc, char **argv)
     {
     case 1:
       {
-	myfundatatype myfundata = {Nx, Ny, Nz, hx, hy, hz, omega, ksp, epspmlQ, epscoef, epsmedium, epsC, epsCi, epsP, x, cglambda, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, M, from, to, scatter, filenameComm};
-      nlopt_set_max_objective(opt, ResonatorSolver, &myfundata);
+	myfundataRHStype myfundata = {Nx, Ny, Nz,clx,cly,clz,ncx,ncy,ncz,Jdirection, hx, hy, hz, omega, ksp, epspmlQ, epscoef, epsmedium, epsC, epsCi, epsP, x, cglambda, J, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, M, from, to, scatter, filenameComm};
+      nlopt_set_max_objective(opt, ResonatorSolverRHS, &myfundata);
       result = nlopt_optimize(opt,epsopt,&maxf);
       }      
       break;
@@ -315,7 +308,7 @@ int main(int argc, char **argv)
 	PetscOptionsGetInt(PETSC_NULL,"-maxeigit",&maxeigit,&flg);  MyCheckAndOutputInt(flg,maxeigit,"maxeigit","maximum number of Eig solver iterations is");
 
 
-	  myfundatatype myfundata = {Nx, Ny, Nz, hx, hy, hz, omega, ksp, epspmlQ, epscoef, epsmedium, epsC, epsCi, epsP, x, cglambda, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, M, from, to, scatter, filenameComm};
+	myfundataRHStype myfundata = {Nx, Ny, Nz,clx,cly,clz,ncx,ncy,ncz,Jdirection, hx, hy, hz, omega, ksp, epspmlQ, epscoef, epsmedium, epsC, epsCi, epsP, x, cglambda, J, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, M, from, to, scatter, filenameComm};
 
 	/*----------------------------------*/
 	EigenSolver(&myfundata,Linear, Eig, maxeigit);
@@ -333,7 +326,7 @@ int main(int argc, char **argv)
 
 	// use spartptdouble to store current omega;
 	double spareptdouble[] = {0}; //initialization;
-	myfundatatypeq myfundataq = {Nx, Ny, Nz, hx, hy, hz, omega, ldoscenter, spareptdouble, ksp, epspmlQ, epscoef, epsC, epsCi, epsP, x, cglambda, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, M, from, to, scatter, filenameComm};
+	myfundataRHStypeq myfundataq = {Nx, Ny, Nz,clx,cly,clz,ncx,ncy,ncz,Jdirection, hx, hy, hz, omega, ldoscenter, spareptdouble, ksp, epspmlQ, epscoef, epsC, epsCi, epsP, x, cglambda, J, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, M, from, to, scatter, filenameComm};
        
 	varopt = (double *) malloc(numofvar*sizeof(double));
 	varopt[0] = omega;
