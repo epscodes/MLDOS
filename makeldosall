@@ -1,7 +1,7 @@
 #! /bin/bash
 
 export PETSC_DIR=/home/xdliang/MyLocal/petsc/petsc-3.1-p8
-export PETSC_ARCH=arch-debug
+export PETSC_ARCH=arch-opt
 export CavityLibPath=$PWD/CodesForLibrary
 export NloptLibPath=/usr/local/lib
 

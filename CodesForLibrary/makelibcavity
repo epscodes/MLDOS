@@ -6,6 +6,7 @@ make clean
 
 cp Resonator.h ../MLDOS/
 cp Resonator.h ../MLDOSRHS/
+cp Resonator.h ../MLDOSPOLXY/
 
 #cp Resonator.h ../AnalyzeStructure/
 #cp Resonator.h ../ComputeQ/

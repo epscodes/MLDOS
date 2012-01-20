@@ -1,8 +1,8 @@
-all: MoperatorGeneral.o SourceGeneration.o PML.o Eps.o MathTools.o Output.o ldos.o  ResonatorSolver.o EigenSolver.o ResonatorSolverRHS.o
+all: MoperatorGeneral.o SourceGeneration.o PML.o Eps.o MathTools.o Output.o ldos.o  ResonatorSolver.o EigenSolver.o ResonatorSolverRHS.o ResonatorSolverPOLXY.o
 
 include ${PETSC_DIR}/conf/variables
 include ${PETSC_DIR}/conf/rules
-CLEANFILES =  MoperatorGeneral.o SourceGeneration.o PML.o EPS.o MathTools.o Output.o ldos.o  ResonatorSolver.o EigenSolver.o ResonatorSolverRHS.o
+CLEANFILES =  MoperatorGeneral.o SourceGeneration.o PML.o EPS.o MathTools.o Output.o ldos.o  ResonatorSolver.o EigenSolver.o ResonatorSolverRHS.o ResonatorSolverPOLXY.o
 
 
 MoperatorGeneral: MoperatorGeneral.o
@@ -25,3 +25,5 @@ EigenSolver:EigenSolver.o
 	$(CLINKER) -Wall -g -o $@ EigenSolver.o
 ResonatorSolverRHS:ResonatorSolverRHS.o
 	$(CLINKER) -Wall -g -o $@ ResonatorSolverRHS.o
+ResonatorSolverPOLXY:ResonatorSolverPOLXY.o
+	$(CLINKER) -Wall -g -o $@ ResonatorSolverPOLXY.o

@@ -89,6 +89,9 @@ PetscErrorCode RayleighQuotient(Mat M, Vec diagB, Vec x, Vec b, Vec vR, Mat D, V
 // from ResonatorSolverRHS.c
 double ResonatorSolverRHS(int Mxyz,double *epsopt, double *grad, void *data);
 
+// from ResonatorSolverPOLXY.c
+double ResonatorSolverPOLXY(int Mxyz,double *epsopt, double *grad, void *data);
+
 
 // datatype used for optimization of dielectric structure;
 typedef struct { 
@@ -144,3 +147,29 @@ typedef struct {
   char *SfilenameComm;
 } myfundataRHStypeq;
 
+// datatype used for optimization of dielectric structure with Polarization in both X and Y;
+typedef struct { 
+  int SNx, SNy, SNz; 
+  double Shx, Shy, Shz;
+  double Somega;
+  KSP Skspx, Skspy;
+  Vec SepspmlQ, Sepscoef, Sepsmedium, SepsC, SepsCi, SepsPx, SepsPy, Ssolx, Ssoly, Scglambda, Sbx, Sby, SweightedJx, SweightedJy, SvR, SepsSReal, Sepsgrad, Svgrad, Svgradlocal, Stmp, Stmpa, Stmpb;
+  Mat SA, SD, SMatX, SMatY;
+  IS Sfrom, Sto;
+  VecScatter Sscatter;
+  char *SfilenameComm;
+} myfundataPOLXYtype;
+
+// dataype used for optimization of frequency with Polarization in both X and Y;
+typedef struct { 
+  int SNx, SNy, SNz; 
+  double Shx, Shy, Shz;
+  double Somega, Ssparedouble;
+  double *Sspareptdouble;
+  KSP Skspx, Skspy;
+  Vec SepspmlQ, Sepscoef, SepsC, SepsCi, SepsPx, SepsPy, Ssolx, Ssoly, Scglambda, Sbx, Sby, SweightedJx, SweightedJy, SvR, SepsSReal, Sepsgrad, Svgrad, Svgradlocal, Stmp, Stmpa, Stmpb;
+  Mat SA, SD, SMatX, SMatY;
+  IS Sfrom, Sto;
+  VecScatter Sscatter;
+  char *SfilenameComm;
+} myfundataPOLXYtypeq;

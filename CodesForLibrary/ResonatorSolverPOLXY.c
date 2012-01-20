@@ -3,19 +3,20 @@
 #include "Resonator.h"
 
 extern int count;
-extern int its;
+extern int itsx;
+extern int itsy;
 extern int maxit;
 extern int ccount;
 extern double cldos;
 
 #undef __FUNCT__ 
-#define __FUNCT__ "ResonatorSolver"
-double ResonatorSolver(int Mxyz,double *epsopt, double *grad, void *data)
+#define __FUNCT__ "ResonatorSolverPOLXY"
+double ResonatorSolverPOLXY(int Mxyz,double *epsopt, double *grad, void *data)
 {
   
   PetscErrorCode ierr;
   
-  myfundatatype *ptmyfundata = (myfundatatype *) data;
+  myfundataPOLXYtype *ptmyfundata = (myfundataPOLXYtype *) data;
   
   int Nx = ptmyfundata->SNx;
   int Ny = ptmyfundata->SNy;
@@ -24,21 +25,27 @@ double ResonatorSolver(int Mxyz,double *epsopt, double *grad, void *data)
   double hy = ptmyfundata->Shy;
   double hz = ptmyfundata->Shz;
   double omega = ptmyfundata->Somega;
-  KSP ksp = ptmyfundata->Sksp;
+  KSP kspx = ptmyfundata->Skspx;
+  KSP kspy = ptmyfundata->Skspy;
   Vec epspmlQ = ptmyfundata->SepspmlQ;
   Vec epsmedium = ptmyfundata->Sepsmedium;
   Vec epsC = ptmyfundata->SepsC;
   Vec epsCi = ptmyfundata->SepsCi;
-  Vec epsP = ptmyfundata->SepsP;
-  Vec x = ptmyfundata->Sx;
-  Vec b = ptmyfundata->Sb;
-  Vec weightedJ = ptmyfundata->SweightedJ;
+  Vec epsPx = ptmyfundata->SepsPx;
+  Vec epsPy = ptmyfundata->SepsPy;
+  Vec solx = ptmyfundata->Ssolx;
+  Vec soly = ptmyfundata->Ssoly;
+  Vec bx = ptmyfundata->Sbx;
+  Vec by = ptmyfundata->Sby;
+  Vec weightedJx = ptmyfundata->SweightedJx;
+  Vec weightedJy = ptmyfundata->SweightedJy;
+
   Vec vR = ptmyfundata->SvR;
   Vec epsSReal = ptmyfundata->SepsSReal;
-
   Mat A = ptmyfundata->SA;
   Mat D = ptmyfundata->SD;
-  Mat M = ptmyfundata->SM;
+  Mat MatX = ptmyfundata->SMatX;
+  Mat MatY = ptmyfundata->SMatY;
   
   char *filenameComm = ptmyfundata->SfilenameComm;
 
@@ -50,9 +57,9 @@ double ResonatorSolver(int Mxyz,double *epsopt, double *grad, void *data)
  
 
   // Update the diagonals of M Matrix;
-  ModifyMatDiagonals(M, A,D, epsSReal, epspmlQ, epsmedium, epsC, epsCi, epsP, Nxyz,omega);
-   
+  ModifyMatDiagonals(MatX, A,D, epsSReal, epspmlQ, epsmedium, epsC, epsCi, epsPx, Nxyz,omega);
 
+  ModifyMatDiagonals(MatY, A,D, epsSReal, epspmlQ, epsmedium, epsC, epsCi, epsPy, Nxyz,omega);
   
   #if 1
   //clock_t tstart, tend;  int tpast; tstart=clock();  
@@ -62,31 +69,62 @@ double ResonatorSolver(int Mxyz,double *epsopt, double *grad, void *data)
   /*-----------------KSP Solving------------------*/ 
 
 #if 1 
-  if (its> 15 || count< 15 )
+  if (itsx> 15 || count< 15 )
     {
-      PetscPrintf(PETSC_COMM_WORLD,"Same nonzero pattern, LU is redone! \n");
-      ierr = KSPSetOperators(ksp,M,M,SAME_NONZERO_PATTERN);CHKERRQ(ierr);}
+      PetscPrintf(PETSC_COMM_WORLD,"Same nonzero pattern for x-direction, LU is redone! \n");
+      ierr = KSPSetOperators(kspx,MatX,MatX,SAME_NONZERO_PATTERN);CHKERRQ(ierr);
+    }
   else
-    {ierr = KSPSetOperators(ksp,M,M,SAME_PRECONDITIONER);CHKERRQ(ierr);}
+    {
+      ierr = KSPSetOperators(kspx,MatX,MatX,SAME_PRECONDITIONER);CHKERRQ(ierr);
+    }
 
-   ierr = KSPSolve(ksp,b,x);CHKERRQ(ierr);
-   ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
-   ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations in this step is %D----\n ",its);CHKERRQ(ierr);
+  if (itsy> 15 || count< 15 )
+    {
+      PetscPrintf(PETSC_COMM_WORLD,"Same nonzero pattern for y-direction, LU is redone! \n");
+      ierr = KSPSetOperators(kspy,MatY,MatY,SAME_NONZERO_PATTERN);CHKERRQ(ierr);
+    }
+  else
+    {
+      ierr = KSPSetOperators(kspy,MatY,MatY,SAME_PRECONDITIONER);CHKERRQ(ierr);
+    }
+
+
+
+   ierr = KSPSolve(kspx,bx,solx);CHKERRQ(ierr); 
+   ierr = KSPGetIterationNumber(kspx,&itsx);CHKERRQ(ierr);
+   ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations in this step (x-direciton) current is %D----\n ",itsx); CHKERRQ(ierr);
+
+  ierr = KSPSolve(kspy,by,soly);CHKERRQ(ierr);  
+  ierr = KSPGetIterationNumber(kspy,&itsy);CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations in this step (y-direciton) current is %D----\n ",itsy); CHKERRQ(ierr);
 
 #endif
 
    // if GMRES is stopped due to maxit, then redo it with sparse direct solve;
 #if 1
   {
-    ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
-    if(its>(maxit-2))
+    ierr = KSPGetIterationNumber(kspx,&itsx);CHKERRQ(ierr);
+   
+    if(itsx>(maxit-2))
       {
-	PetscPrintf(PETSC_COMM_WORLD,"Too many iterations needed! Recomputing \n");
-	ierr = KSPSetOperators(ksp,M,M,SAME_NONZERO_PATTERN);CHKERRQ(ierr);
-	ierr = KSPSolve(ksp,b,x);CHKERRQ(ierr);
-	ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations in this step is %D---\n ",its);CHKERRQ(ierr);
+	PetscPrintf(PETSC_COMM_WORLD,"Too many iterations (x-direction) needed! Recomputing \n");
+	ierr = KSPSetOperators(kspx,MatX,MatX,SAME_NONZERO_PATTERN);CHKERRQ(ierr);
+	ierr = KSPSolve(kspx,bx,solx);CHKERRQ(ierr);
+	ierr = KSPGetIterationNumber(kspx,&itsx);CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations (x-direction) in this step is %D---\n ",itsx);CHKERRQ(ierr);
      }
+    
+    ierr = KSPGetIterationNumber(kspy,&itsy);CHKERRQ(ierr);
+    if (itsy>(maxit-2))
+      {
+	PetscPrintf(PETSC_COMM_WORLD,"Too many iterations (y-direction) needed! Recomputing \n");
+	ierr = KSPSetOperators(kspy,MatY,MatY,SAME_NONZERO_PATTERN);CHKERRQ(ierr);
+	ierr = KSPSolve(kspy,by,soly);CHKERRQ(ierr);
+	ierr = KSPGetIterationNumber(kspy,&itsy);CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations (y-direction) in this step is %D---\n ",itsy);CHKERRQ(ierr);
+     }
+
   }
 #endif
 
@@ -94,7 +132,7 @@ double ResonatorSolver(int Mxyz,double *epsopt, double *grad, void *data)
   //Print kspsolving information
   //int its;
 
-#if 1
+#if 0
   double norm;
   Vec xdiff;
   ierr=VecDuplicate(x,&xdiff);CHKERRQ(ierr);
@@ -118,10 +156,17 @@ double ResonatorSolver(int Mxyz,double *epsopt, double *grad, void *data)
 #endif   
 
 
-  double ldos; //ldos = -Re((weight.*J)'*E) or -Re(E'*(weight*J));
-  ierr = VecDot(x,weightedJ,&ldos);
-  ldos = -1.0*ldos*hxyz;
-  PetscPrintf(PETSC_COMM_WORLD,"---The current ldos at step %d is %.16e \n", count,ldos);
+  double ldos, ldosx, ldosy; //ldos = -Re((weight.*J)'*E) or -Re(E'*(weight*J));
+  ierr = VecDot(solx,weightedJx,&ldosx);
+  ldosx = -1.0*ldosx*hxyz;
+  ierr = VecDot(soly,weightedJy,&ldosy);
+  ldosy = -1.0*ldosy*hxyz;  
+  ldos = ldosx + ldosy;
+
+  PetscPrintf(PETSC_COMM_WORLD,"---The current ldosx at step %d is %.16e \n", count,ldosx);
+  PetscPrintf(PETSC_COMM_WORLD,"---The current ldosy at step %d is %.16e \n", count,ldosy);
+
+ PetscPrintf(PETSC_COMM_WORLD,"---The current ldos at step %d is %.16e \n", count,ldos);
   PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------- \n");
 
  
@@ -163,24 +208,24 @@ double ResonatorSolver(int Mxyz,double *epsopt, double *grad, void *data)
 
 #if 1
    /* Adjoint-Method tells us Mtran*lambba =J -> x = i*omega/weight*conj(lambda);  therefore the derivative is Re(x^2*weight*i*omega*(1+i/Qabs)*epspml) = Re(x^2*epscoef) ; here, I omit two minus signs: one is M'*lam= -j; the other is -Re(***). minus minus is a plus.*/
-   int aconj=0;
-   CmpVecProd(x,epscoef,tmp,D,Nxyz,aconj,tmpa,tmpb);
-   CmpVecProd(x,tmp,epsgrad,D,Nxyz,aconj,tmpa,tmpb);   
-   VecScale(epsgrad,hxyz); // the factor hxyz handle both 2D and 3D;
-#endif
+   
+   Vec epsgradx, epsgrady;
+   VecDuplicate(epsgrad,&epsgradx);
+   VecDuplicate(epsgrad,&epsgrady);
 
-
-#if 0
- /* Adjoint-Method tells us Mtran*lambda = -weight.*J= -weightedJ; therefore we have to solve M*conj(lambda) = -weightedJ; then the derivative is -conj(lambda).*[-omega^2*epspml*(1+i/Qabs)]*x); it is equivalent to solve M*z = weightedJ, and derivative is z*epspml*(1+i/Qabs)*omega^2*x = z*epspmlQ*x*omega^2; */
-    Vec cglambda = ptmyfundata->Scglambda;
-   int its2;
-   ierr = KSPSolve(ksp,weightedJ,cglambda);CHKERRQ(ierr);
-   ierr = KSPGetIterationNumber(ksp,&its2);CHKERRQ(ierr);
-   ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations for Adjoint equation is %D----\n ",its2);CHKERRQ(ierr);
    int aconj=0;
-   CmpVecProd(cglambda,epspmlQ,tmp,D,Nxyz,aconj,tmpa,tmpb);
-   CmpVecProd(x,tmp,epsgrad,D,Nxyz,aconj,tmpa,tmpb); 
-   VecScale(epsgrad,-pow(omega,2)*hx*hy); // the minus sign is because the quation we are solving is M z = -weightedJ; // the factor hx*hy is from 2D intergartion;
+   CmpVecProd(solx,epscoef,tmp,D,Nxyz,aconj,tmpa,tmpb);
+   CmpVecProd(solx,tmp,epsgradx,D,Nxyz,aconj,tmpa,tmpb);   
+   VecScale(epsgradx,hxyz); // the factor hxyz handle both 2D and 3D;
+
+   CmpVecProd(soly,epscoef,tmp,D,Nxyz,aconj,tmpa,tmpb);
+   CmpVecProd(soly,tmp,epsgrady,D,Nxyz,aconj,tmpa,tmpb);   
+   VecScale(epsgrady,hxyz); // the factor hxyz handle both 2D and 3D;
+
+   VecAXPBYPCZ(epsgrad,1.0,1.0,0.0,epsgradx,epsgrady);
+
+   ierr = VecDestroy(epsgradx); CHKERRQ(ierr);
+   ierr = VecDestroy(epsgrady); CHKERRQ(ierr);
 #endif
 
 

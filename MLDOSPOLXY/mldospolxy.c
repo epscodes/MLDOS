@@ -6,6 +6,8 @@
 
 int count=1;
 int its=100;
+int itsx=100;
+int itsy=100;
 int maxit=20;
 double cldos=0;//set initial ldos;
 int ccount=1;
@@ -41,17 +43,10 @@ int main(int argc, char **argv)
   Mxyz = Mx*My*((Mzslab==0)?Mz:1);
 
   int BCPeriod, Jdirection, LowerPML;
-  int bx[2], by[2], bz[2];
+  int bcx[2], bcy[2], bcz[2];
   PetscOptionsGetInt(PETSC_NULL,"-BCPeriod",&BCPeriod,&flg);  MyCheckAndOutputInt(flg,BCPeriod,"BCPeriod","BCPeriod given");
-  PetscOptionsGetInt(PETSC_NULL,"-Jdirection",&Jdirection,&flg);  MyCheckAndOutputInt(flg,Jdirection,"Jdirection","Diapole current direction");
   PetscOptionsGetInt(PETSC_NULL,"-LowerPML",&LowerPML,&flg);  MyCheckAndOutputInt(flg,LowerPML,"LowerPML","PML in the lower xyz boundary");
-  PetscOptionsGetInt(PETSC_NULL,"-bxl",bx,&flg);  MyCheckAndOutputInt(flg,bx[0],"bxl","BC at x lower");
-  PetscOptionsGetInt(PETSC_NULL,"-bxu",bx+1,&flg);  MyCheckAndOutputInt(flg,bx[1],"bxu","BC at x upper");
-  PetscOptionsGetInt(PETSC_NULL,"-byl",by,&flg);  MyCheckAndOutputInt(flg,by[0],"byl","BC at y lower");
-  PetscOptionsGetInt(PETSC_NULL,"-byu",by+1,&flg);  MyCheckAndOutputInt(flg,by[1],"byu","BC at y upper");
-  PetscOptionsGetInt(PETSC_NULL,"-bzl",bz,&flg);  MyCheckAndOutputInt(flg,bz[0],"bzl","BC at z lower");
-  PetscOptionsGetInt(PETSC_NULL,"-bzu",bz+1,&flg);  MyCheckAndOutputInt(flg,bz[1],"bzu","BC at z upper");
-
+  
 
   double hx, hy,hz, hxyz, omega, Qabs,epsair, epssub, RRT, sigmax, sigmay, sigmaz ;
    
@@ -109,38 +104,44 @@ int main(int argc, char **argv)
   Mat D; //ImaginaryIMatrix;
   ImagIMat(PETSC_COMM_WORLD, &D,Nxyz);
 
-  Vec J;
-  ierr = VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, 6*Nxyz, &J);CHKERRQ(ierr);
-  ierr = PetscObjectSetName((PetscObject) J, "Source");CHKERRQ(ierr);
-  VecSet(J,0.0); //initialization;
+  Vec Jx, Jy;
+  ierr = VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, 6*Nxyz, &Jx);CHKERRQ(ierr);
+  ierr = PetscObjectSetName((PetscObject) Jx, "SourceX");CHKERRQ(ierr);
+  VecSet(Jx,0.0); //initialization;
+  SourceSingleSetX(PETSC_COMM_WORLD, Jx, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
 
-  if (Jdirection == 1)
-    SourceSingleSetX(PETSC_COMM_WORLD, J, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
-  else if (Jdirection == 3)
-    SourceSingleSetZ(PETSC_COMM_WORLD, J, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
-  else
-    PetscPrintf(PETSC_COMM_WORLD," Please specify correct direction of current: x (1) or z (3)\n "); 
+  ierr = VecDuplicate(Jx,&Jy); CHKERRQ(ierr);
+  ierr = PetscObjectSetName((PetscObject) Jy, "SourceY");CHKERRQ(ierr);
+  VecSet(Jy,0.0); //initialization;
+  SourceSingleSetY(PETSC_COMM_WORLD, Jy, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
 
-  Vec b; // b= i*omega*J;
-  ierr = VecDuplicate(J,&b);CHKERRQ(ierr);
-  ierr = MatMult(D,J,b);CHKERRQ(ierr);
-  VecScale(b,omega);
+  Vec bx, by; // b= i*omega*J;
+  ierr = VecDuplicate(Jx,&bx);CHKERRQ(ierr);
+  ierr = MatMult(D,Jx,bx);CHKERRQ(ierr);
+  VecScale(bx,omega);
+
+  ierr = VecDuplicate(Jy,&by);CHKERRQ(ierr);
+  ierr = MatMult(D,Jy,by);CHKERRQ(ierr);
+  VecScale(by,omega);
 
   /*-------Get the weight vector ------------------*/
   Vec weight;
-  ierr = VecDuplicate(J,&weight); CHKERRQ(ierr);
+  ierr = VecDuplicate(Jx,&weight); CHKERRQ(ierr);
   
   if(LowerPML==0)
     GetWeightVec(weight, Nx, Ny,Nz); // new code handles both 3D and 2D;
   else
     VecSet(weight,1.0);
 
-  Vec weightedJ;
-  ierr = VecDuplicate(J,&weightedJ); CHKERRQ(ierr);
-  ierr = VecPointwiseMult(weightedJ,J,weight);
+  Vec weightedJx, weightedJy;
+  ierr = VecDuplicate(Jx,&weightedJx); CHKERRQ(ierr);
+  ierr = VecPointwiseMult(weightedJx,Jx,weight);
+
+  ierr = VecDuplicate(Jy,&weightedJy); CHKERRQ(ierr);
+  ierr = VecPointwiseMult(weightedJy,Jy,weight);
 
   Vec vR;
-  ierr = VecDuplicate(J,&vR); CHKERRQ(ierr);
+  ierr = VecDuplicate(Jx,&vR); CHKERRQ(ierr);
   GetRealPartVec(vR, Nxyz);
 
   /*----------- Define PML muinv vectors  */
@@ -156,12 +157,12 @@ int main(int argc, char **argv)
 
   /*---------- Define PML eps vectors: epspml---------- */  
   Vec epspml, epspmlQ, epscoef;
-  ierr = VecDuplicate(J,&epspml);CHKERRQ(ierr);
+  ierr = VecDuplicate(Jx,&epspml);CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject) epspml,"EpsPMLFull"); CHKERRQ(ierr);
   EpsPMLFull(PETSC_COMM_WORLD, epspml,Nx,Ny,Nz,Npmlx,Npmly,Npmlz,sigmax,sigmay,sigmaz,omega, LowerPML);
 
-  ierr = VecDuplicate(J,&epspmlQ);CHKERRQ(ierr);
-  ierr = VecDuplicate(J,&epscoef);CHKERRQ(ierr);
+  ierr = VecDuplicate(Jx,&epspmlQ);CHKERRQ(ierr);
+  ierr = VecDuplicate(Jx,&epscoef);CHKERRQ(ierr);
  
   // compute epspmlQ,epscoef;
   EpsCombine(D, weight, epspml, epspmlQ, epscoef, Qabs, omega);
@@ -182,53 +183,78 @@ int main(int argc, char **argv)
 
   /*---------Setup the epsmedium vector----------------*/
   Vec epsmedium;
-  ierr = VecDuplicate(J,&epsmedium); CHKERRQ(ierr);
+  ierr = VecDuplicate(Jx,&epsmedium); CHKERRQ(ierr);
   GetMediumVec(epsmedium,Nz,Mz,epsair,epssub);
  
   /*--------- Setup the finitie difference matrix-------------*/
-  Mat M;
-  MoperatorGeneral(PETSC_COMM_WORLD, &M, Nx,Ny,Nz,hx,hy,hz, bx, by, bz,muinv,BCPeriod);
+  Mat MatX, MatY;
+  bcz[0]=1, bcz[1]=1;
+
+  bcx[0]=-1; bcx[1]=-1; bcy[0]=1;bcy[1]=1; // for Jdirection in x;
+  MoperatorGeneral(PETSC_COMM_WORLD, &MatX, Nx,Ny,Nz,hx,hy,hz, bcx, bcy, bcz,muinv,BCPeriod);
+
+  bcx[0]=1, bcx[1]=1; bcy[0]=-1; bcy[1]=-1;
+  MoperatorGeneral(PETSC_COMM_WORLD, &MatY, Nx,Ny,Nz,hx,hy,hz, bcx, bcy, bcz,muinv,BCPeriod);
   free(muinv);
 
   /*--------Setup the KSP variables ---------------*/
   
-  KSP ksp;
-  PC pc; 
-  ierr = KSPCreate(PETSC_COMM_WORLD,&ksp);CHKERRQ(ierr);
+  KSP kspx, kspy;
+  PC pcx, pcy; 
+  ierr = KSPCreate(PETSC_COMM_WORLD,&kspx);CHKERRQ(ierr);
   //ierr = KSPSetType(ksp, KSPPREONLY);CHKERRQ(ierr);
-  ierr = KSPSetType(ksp, KSPGMRES);CHKERRQ(ierr);
-  ierr = KSPGetPC(ksp,&pc);CHKERRQ(ierr);
-  ierr = PCSetType(pc,PCLU);CHKERRQ(ierr);
-  ierr = PCFactorSetMatSolverPackage(pc,MAT_SOLVER_PASTIX);CHKERRQ(ierr);
+  ierr = KSPSetType(kspx, KSPGMRES);CHKERRQ(ierr);
+  ierr = KSPGetPC(kspx,&pcx);CHKERRQ(ierr);
+  ierr = PCSetType(pcx,PCLU);CHKERRQ(ierr);
+  ierr = PCFactorSetMatSolverPackage(pcx,MAT_SOLVER_PASTIX);CHKERRQ(ierr);
   int maxkspit = 20;
-  ierr = KSPSetTolerances(ksp,1e-14,PETSC_DEFAULT,PETSC_DEFAULT,maxkspit);CHKERRQ(ierr);
-  ierr = KSPSetFromOptions(ksp);CHKERRQ(ierr);
+  ierr = KSPSetTolerances(kspx,1e-14,PETSC_DEFAULT,PETSC_DEFAULT,maxkspit);CHKERRQ(ierr);
+  ierr = KSPSetFromOptions(kspx);CHKERRQ(ierr);
+
+  ierr = KSPCreate(PETSC_COMM_WORLD,&kspy);CHKERRQ(ierr);
+  //ierr = KSPSetType(ksp, KSPPREONLY);CHKERRQ(ierr);
+  ierr = KSPSetType(kspy, KSPGMRES);CHKERRQ(ierr);
+  ierr = KSPGetPC(kspy,&pcy);CHKERRQ(ierr);
+  ierr = PCSetType(pcy,PCLU);CHKERRQ(ierr);
+  ierr = PCFactorSetMatSolverPackage(pcy,MAT_SOLVER_PASTIX);CHKERRQ(ierr);
+ 
+  ierr = KSPSetTolerances(kspy,1e-14,PETSC_DEFAULT,PETSC_DEFAULT,maxkspit);CHKERRQ(ierr);
+  ierr = KSPSetFromOptions(kspy);CHKERRQ(ierr);
+
 
   /*--------- Create the space for solution vector -------------*/
-  Vec x;
-  ierr = VecDuplicate(J,&x);CHKERRQ(ierr);
-  ierr = PetscObjectSetName((PetscObject) x, "Solution");CHKERRQ(ierr); 
+  Vec solx, soly;
+  ierr = VecDuplicate(Jx,&solx);CHKERRQ(ierr);
+  ierr = PetscObjectSetName((PetscObject) solx, "SolutionX");CHKERRQ(ierr); 
+
+  ierr = VecDuplicate(Jy,&soly);CHKERRQ(ierr);
+  ierr = PetscObjectSetName((PetscObject) soly, "SolutionY");CHKERRQ(ierr); 
+
 
   Vec cglambda;
-  ierr = VecDuplicate(J,&cglambda);CHKERRQ(ierr);
+  ierr = VecDuplicate(Jx,&cglambda);CHKERRQ(ierr);
   
   /*----------- Create the space for final eps -------------*/
 
-  Vec epsC, epsCi, epsP;
-  ierr = VecDuplicate(J,&epsC);CHKERRQ(ierr);
-  ierr = VecDuplicate(J,&epsCi);CHKERRQ(ierr);
-  ierr = VecDuplicate(J,&epsP);CHKERRQ(ierr);
-
-  ierr = VecSet(epsP,0.0); CHKERRQ(ierr);
-  ierr = VecAssemblyBegin(epsP); CHKERRQ(ierr);
-  ierr = VecAssemblyEnd(epsP); CHKERRQ(ierr); 
+  Vec epsC, epsCi, epsPx, epsPy;
+  ierr = VecDuplicate(Jx,&epsC);CHKERRQ(ierr);
+  ierr = VecDuplicate(Jx,&epsCi);CHKERRQ(ierr);
+  ierr = VecDuplicate(Jx,&epsPx);CHKERRQ(ierr);
+  ierr = VecDuplicate(Jy,&epsPy);CHKERRQ(ierr);
+ 
+  ierr = VecSet(epsPx,0.0); CHKERRQ(ierr);
+  ierr = VecAssemblyBegin(epsPx); CHKERRQ(ierr);
+  ierr = VecAssemblyEnd(epsPx); CHKERRQ(ierr); 
+  ierr = VecSet(epsPy,0.0); CHKERRQ(ierr);
+  ierr = VecAssemblyBegin(epsPy); CHKERRQ(ierr);
+  ierr = VecAssemblyEnd(epsPy); CHKERRQ(ierr); 
 
   /*------------ Create space used in the solver ------------*/
   Vec vgradlocal,tmp, tmpa,tmpb;
   ierr = VecCreateSeq(PETSC_COMM_SELF, Mxyz, &vgradlocal); CHKERRQ(ierr);
-  ierr = VecDuplicate(J,&tmp); CHKERRQ(ierr);
-  ierr = VecDuplicate(J,&tmpa); CHKERRQ(ierr);
-  ierr = VecDuplicate(J,&tmpb); CHKERRQ(ierr);
+  ierr = VecDuplicate(Jx,&tmp); CHKERRQ(ierr);
+  ierr = VecDuplicate(Jx,&tmpa); CHKERRQ(ierr);
+  ierr = VecDuplicate(Jx,&tmpb); CHKERRQ(ierr);
  
   /*------------ Create scatter used in the solver -----------*/
   VecScatter scatter;
@@ -320,8 +346,8 @@ int main(int argc, char **argv)
     {
     case 1:
       {
-	myfundatatype myfundata = {Nx, Ny, Nz, hx, hy, hz, omega, ksp, epspmlQ, epscoef, epsmedium, epsC, epsCi, epsP, x, cglambda, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, M, from, to, scatter, filenameComm};
-      nlopt_set_max_objective(opt, ResonatorSolver, &myfundata);
+	myfundataPOLXYtype myfundata = {Nx, Ny, Nz, hx, hy, hz, omega, kspx, kspy, epspmlQ, epscoef, epsmedium, epsC, epsCi, epsPx, epsPy, solx, soly, cglambda, bx, by, weightedJx, weightedJy, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, MatX, MatY, from, to, scatter, filenameComm};
+      nlopt_set_max_objective(opt, ResonatorSolverPOLXY, &myfundata);
       result = nlopt_optimize(opt,epsopt,&maxf);
       }      
       break;
@@ -333,7 +359,7 @@ int main(int argc, char **argv)
 	PetscOptionsGetInt(PETSC_NULL,"-maxeigit",&maxeigit,&flg);  MyCheckAndOutputInt(flg,maxeigit,"maxeigit","maximum number of Eig solver iterations is");
 
 
-	  myfundatatype myfundata = {Nx, Ny, Nz, hx, hy, hz, omega, ksp, epspmlQ, epscoef, epsmedium, epsC, epsCi, epsP, x, cglambda, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, M, from, to, scatter, filenameComm};
+	myfundataPOLXYtype myfundata = {Nx, Ny, Nz, hx, hy, hz, omega, kspx, kspy, epspmlQ, epscoef, epsmedium, epsC, epsCi, epsPx, epsPy, solx, soly, cglambda, bx, by, weightedJx, weightedJy, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, MatX, MatY, from, to, scatter, filenameComm};
 
 	/*----------------------------------*/
 	EigenSolver(&myfundata,Linear, Eig, maxeigit);
@@ -351,7 +377,7 @@ int main(int argc, char **argv)
 
 	// use spartptdouble to store current omega;
 	double spareptdouble[] = {0}; //initialization;
-	myfundatatypeq myfundataq = {Nx, Ny, Nz, hx, hy, hz, omega, ldoscenter, spareptdouble, ksp, epspmlQ, epscoef, epsC, epsCi, epsP, x, cglambda, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, M, from, to, scatter, filenameComm};
+	myfundataPOLXYtypeq myfundataq = {Nx, Ny, Nz, hx, hy, hz, omega, ldoscenter, spareptdouble, kspx, kspy, epspmlQ, epscoef, epsC, epsCi, epsPx, epsPy, solx, soly, cglambda, bx, by, weightedJx, weightedJy, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, MatX, MatY, from, to, scatter, filenameComm};
        
 	varopt = (double *) malloc(numofvar*sizeof(double));
 	varopt[0] = omega;
@@ -431,10 +457,16 @@ int main(int argc, char **argv)
   free(epsopt);
   free(lb);
   free(ub);
-  ierr = VecDestroy(J); CHKERRQ(ierr);
-  ierr = VecDestroy(b); CHKERRQ(ierr);
+  ierr = VecDestroy(Jx); CHKERRQ(ierr);
+  ierr = VecDestroy(Jy); CHKERRQ(ierr);
+
+  ierr = VecDestroy(bx); CHKERRQ(ierr);
+  ierr = VecDestroy(by); CHKERRQ(ierr);
+ 
   ierr = VecDestroy(weight); CHKERRQ(ierr);
-  ierr = VecDestroy(weightedJ); CHKERRQ(ierr);
+  ierr = VecDestroy(weightedJx); CHKERRQ(ierr);
+  ierr = VecDestroy(weightedJy); CHKERRQ(ierr);
+
   ierr = VecDestroy(vR); CHKERRQ(ierr);
   ierr = VecDestroy(epspml); CHKERRQ(ierr);
   ierr = VecDestroy(epspmlQ); CHKERRQ(ierr);
@@ -445,8 +477,12 @@ int main(int argc, char **argv)
   ierr = VecDestroy(epsmedium); CHKERRQ(ierr);
   ierr = VecDestroy(epsC); CHKERRQ(ierr);
   ierr = VecDestroy(epsCi); CHKERRQ(ierr);
-  ierr = VecDestroy(epsP); CHKERRQ(ierr);
-  ierr = VecDestroy(x); CHKERRQ(ierr);
+  ierr = VecDestroy(epsPx); CHKERRQ(ierr);
+  ierr = VecDestroy(epsPy); CHKERRQ(ierr);
+
+  ierr = VecDestroy(solx); CHKERRQ(ierr);
+  ierr = VecDestroy(soly); CHKERRQ(ierr);
+
   ierr = VecDestroy(cglambda);CHKERRQ(ierr);
   ierr = VecDestroy(vgradlocal);CHKERRQ(ierr);
   ierr = VecDestroy(tmp); CHKERRQ(ierr);
@@ -454,8 +490,11 @@ int main(int argc, char **argv)
   ierr = VecDestroy(tmpb); CHKERRQ(ierr);
   ierr = MatDestroy(A); CHKERRQ(ierr);  
   ierr = MatDestroy(D); CHKERRQ(ierr);
-  ierr = MatDestroy(M); CHKERRQ(ierr);  
-  ierr = KSPDestroy(ksp);CHKERRQ(ierr);
+  ierr = MatDestroy(MatX); CHKERRQ(ierr);  
+  ierr = MatDestroy(MatY); CHKERRQ(ierr);  
+
+  ierr = KSPDestroy(kspx);CHKERRQ(ierr);
+  ierr = KSPDestroy(kspy);CHKERRQ(ierr);
 
   ISDestroy(from);
   ISDestroy(to);
