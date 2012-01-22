@@ -338,6 +338,8 @@ int main(int argc, char **argv)
 	/*----------------------------------*/
 	EigenSolver(&myfundata,Linear, Eig, maxeigit);
 	/*----------------------------------*/
+
+	OutputVec(PETSC_COMM_WORLD, weight,filenameComm, "weight.m");
       }
       break;   
 
@@ -422,8 +424,6 @@ int main(int argc, char **argv)
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--------Done!--------\n ");CHKERRQ(ierr);
 
   /*------------------------------------*/
- 
-  
 
 
   /* ----------------------Destroy Vecs and Mats----------------------------*/ 
