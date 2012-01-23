@@ -116,10 +116,12 @@ int main(int argc, char **argv)
 
   if (Jdirection == 1)
     SourceSingleSetX(PETSC_COMM_WORLD, J, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
+  else if (Jdirection ==2)
+    SourceSingleSetY(PETSC_COMM_WORLD, J, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
   else if (Jdirection == 3)
     SourceSingleSetZ(PETSC_COMM_WORLD, J, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
   else
-    PetscPrintf(PETSC_COMM_WORLD," Please specify correct direction of current: x (1) or z (3)\n "); 
+    PetscPrintf(PETSC_COMM_WORLD," Please specify correct direction of current: x (1) , y (2) or z (3)\n "); 
 
   Vec b; // b= i*omega*J;
   ierr = VecDuplicate(J,&b);CHKERRQ(ierr);
