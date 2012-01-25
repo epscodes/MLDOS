@@ -20,6 +20,9 @@ make clean
 cd ../MLDOSPOLXY/
 make clean
 
+cd ../MLDOSSolar/
+make clean
+
 #cd ../AnalyzeStructure make clean
 
 #cd ../ComputeQ make clean

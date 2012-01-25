@@ -24,6 +24,10 @@ cd ../MLDOSPOLXY
 make clean
 make
 
+cd ../MLDOSSolar
+make clean
+make
+
 #cd ../AnalyzeStructure make clean make
 
 #cd ../ComputeQ make clean #make
