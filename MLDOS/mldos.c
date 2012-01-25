@@ -11,6 +11,7 @@ double cldos=0;//set initial ldos;
 int ccount=1;
 extern int mma_verbose;
 
+int Job;
 
 #undef __FUNCT__ 
 #define __FUNCT__ "main" 
@@ -131,7 +132,8 @@ int main(int argc, char **argv)
   /*-------Get the weight vector ------------------*/
   Vec weight;
   ierr = VecDuplicate(J,&weight); CHKERRQ(ierr);
-  
+  ierr = PetscObjectSetName((PetscObject) weight, "weight");CHKERRQ(ierr);
+
   if(LowerPML==0)
     GetWeightVec(weight, Nx, Ny,Nz); // new code handles both 3D and 2D;
   else
@@ -218,6 +220,7 @@ int main(int argc, char **argv)
 
   Vec epsC, epsCi, epsP;
   ierr = VecDuplicate(J,&epsC);CHKERRQ(ierr);
+  ierr = PetscObjectSetName((PetscObject) epsC, "EpsC");CHKERRQ(ierr);
   ierr = VecDuplicate(J,&epsCi);CHKERRQ(ierr);
   ierr = VecDuplicate(J,&epsP);CHKERRQ(ierr);
 
@@ -268,7 +271,7 @@ int main(int argc, char **argv)
   /*----------------------------------------------------------------*/
 
 
-  int Job;
+  //int Job; set Job to be gloabl variables;
   PetscOptionsGetInt(PETSC_NULL,"-Job",&Job,&flg);  MyCheckAndOutputInt(flg,Job,"Job","The Job indicator you set");
   
   int numofvar=(Job==1)*Mxyz + (Job==3);

@@ -2,6 +2,7 @@
 #include <math.h>
 #include <petsc.h>
 
+
 /* return a sparse matrix A that performs nearest-neighbor interpolation
    from data d an (Mx,My,Mz) centered grid to a 3x(Nx,Ny,Nz) Yee (E) grid,
    such that A*d computes the interpolated data.  Values outside
@@ -133,8 +134,7 @@ PetscErrorCode ModifyMatDiagonals( Mat M, Mat A, Mat D, Vec epsSReal, Vec epspml
   ierr =MatMult(A, epsSReal,epsC); CHKERRQ(ierr); 
   /* ierr =VecShift(epsC,1.0);CHKERRQ(ierr);   // remember to add 1 everyone where. */
   ierr = VecAXPY(epsC,1.0,epsmedium); CHKERRQ(ierr);
-
-  //OutputVec(PETSC_COMM_WORLD,epsC,"TMP","epsC.m"); // output eps in the whole domain for calculating V in matlab;
+  // OutputVec(PETSC_COMM_WORLD,epsC,"TMP","epsC.m"); // output eps in the whole domain for calculating V in matlab;
 
   ierr = VecPointwiseMult(epsC,epsC,epspmlQ); CHKERRQ(ierr);
 
