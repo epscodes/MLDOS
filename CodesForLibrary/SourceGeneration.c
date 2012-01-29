@@ -82,6 +82,29 @@ PetscErrorCode SourceSingleSetZ(MPI_Comm comm, Vec J, int Nx, int Ny, int Nz, in
 
 
 
+#undef __FUNCT__ 
+#define __FUNCT__ "SourceSingleSetGlobal"
+PetscErrorCode SourceSingleSetGlobal(MPI_Comm comm, Vec J, int globalpos, double amp)
+{
+  PetscErrorCode ierr;
+
+  //VecSet(J,0.0);
+
+  int ns, ne;
+  ierr = VecGetOwnershipRange(J, &ns, &ne); CHKERRQ(ierr);
+  
+  if ( ns < globalpos+1 && ne > globalpos)
+    {
+      ierr=VecSetValue(J,globalpos, amp, ADD_VALUES); CHKERRQ(ierr);
+    }
+  ierr = VecAssemblyBegin(J);CHKERRQ(ierr);
+  ierr = VecAssemblyEnd(J); CHKERRQ(ierr);
+
+  PetscFunctionReturn(0);
+}
+
+
+
 
 #undef __FUNCT__ 
 #define __FUNCT__ "SourceDuplicate"

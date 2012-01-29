@@ -10,6 +10,7 @@ PetscErrorCode SourceSingleSetY(MPI_Comm comm, Vec J, int Nx, int Ny, int Nz, in
 
 PetscErrorCode SourceSingleSetZ(MPI_Comm comm, Vec J, int Nx, int Ny, int Nz, int scx, int scy, int scz, double amp);
 
+PetscErrorCode SourceSingleSetGlobal(MPI_Comm comm, Vec J, int globalpos, double amp);
 
 PetscErrorCode SourceDuplicate(MPI_Comm comm, Vec *bout, int Nx, int Ny, int Nz, int scx, int scy, int scz, double amp);
 
@@ -92,6 +93,8 @@ double ResonatorSolverRHS(int Mxyz,double *epsopt, double *grad, void *data);
 // from ResonatorSolverPOLXY.c
 double ResonatorSolverPOLXY(int Mxyz,double *epsopt, double *grad, void *data);
 
+// from ResonatorSolverSolar.c
+double ResonatorSolverSolar(int Mxyz,double *epsopt, double *grad, void *data);
 
 // datatype used for optimization of dielectric structure;
 typedef struct { 
@@ -173,3 +176,18 @@ typedef struct {
   VecScatter Sscatter;
   char *SfilenameComm;
 } myfundataPOLXYtypeq;
+
+
+// datatype used for optimization of dielectric structure with Solar Problem;
+typedef struct { 
+  int SNx, SNy, SNz, SNJ; 
+  double Shx, Shy, Shz;
+  double Somega;
+  KSP Sksp;
+  Vec SepspmlQ, Sepscoef, Sepsmedium, SepsC, SepsCi, SepsP, Sx, Scglambda, SJ, Sb, SweightedJ, SvR, SepsSReal, Sepsgrad, Svgrad, Svgradlocal, Stmp, Stmpa, Stmpb;
+  Mat SA, SD, SM;
+  IS Sfrom, Sto;
+  VecScatter Sscatter;
+  char *SfilenameComm;
+  int *SJRandPos;
+} myfundataSolartype;

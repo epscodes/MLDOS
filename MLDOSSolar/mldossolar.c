@@ -25,7 +25,7 @@ int main(int argc, char **argv)
   mma_verbose=1;
 
   /*-------------------------------------------------*/
-  int Nx,Ny,Nz,Mx,My,Mz,Mzslab, Npmlx,Npmly,Npmlz, Nxyz,Mxyz;
+  int Nx,Ny,Nz,Mx,My,Mz,Mzslab, Npmlx,Npmly,Npmlz, Nxyz,Mxyz, NJ;
 
   PetscOptionsGetInt(PETSC_NULL,"-Nx",&Nx,&flg);  MyCheckAndOutputInt(flg,Nx,"Nx","Nx");
   PetscOptionsGetInt(PETSC_NULL,"-Ny",&Ny,&flg);  MyCheckAndOutputInt(flg,Ny,"Ny","Nx");
@@ -37,14 +37,14 @@ int main(int argc, char **argv)
   PetscOptionsGetInt(PETSC_NULL,"-Npmlx",&Npmlx,&flg);  MyCheckAndOutputInt(flg,Npmlx,"Npmlx","Npmlx");
   PetscOptionsGetInt(PETSC_NULL,"-Npmly",&Npmly,&flg);  MyCheckAndOutputInt(flg,Npmly,"Npmly","Npmly");
   PetscOptionsGetInt(PETSC_NULL,"-Npmlz",&Npmlz,&flg);  MyCheckAndOutputInt(flg,Npmlz,"Npmlz","Npmlz");
+   PetscOptionsGetInt(PETSC_NULL,"-NJ",&NJ,&flg);  MyCheckAndOutputInt(flg,NJ,"NJ","NJ");
 
   Nxyz = Nx*Ny*Nz;
   Mxyz = Mx*My*((Mzslab==0)?Mz:1);
 
-  int BCPeriod, Jdirection, LowerPML;
+  int BCPeriod, LowerPML;
   int bx[2], by[2], bz[2];
   PetscOptionsGetInt(PETSC_NULL,"-BCPeriod",&BCPeriod,&flg);  MyCheckAndOutputInt(flg,BCPeriod,"BCPeriod","BCPeriod given");
-  PetscOptionsGetInt(PETSC_NULL,"-Jdirection",&Jdirection,&flg);  MyCheckAndOutputInt(flg,Jdirection,"Jdirection","Diapole current direction");
   PetscOptionsGetInt(PETSC_NULL,"-LowerPML",&LowerPML,&flg);  MyCheckAndOutputInt(flg,LowerPML,"LowerPML","PML in the lower xyz boundary");
   PetscOptionsGetInt(PETSC_NULL,"-bxl",bx,&flg);  MyCheckAndOutputInt(flg,bx[0],"bxl","BC at x lower");
   PetscOptionsGetInt(PETSC_NULL,"-bxu",bx+1,&flg);  MyCheckAndOutputInt(flg,bx[1],"bxu","BC at x upper");
@@ -54,7 +54,7 @@ int main(int argc, char **argv)
   PetscOptionsGetInt(PETSC_NULL,"-bzu",bz+1,&flg);  MyCheckAndOutputInt(flg,bz[1],"bzu","BC at z upper");
 
 
-  double hx, hy,hz, hxyz, omega, Qabs,epsair, epssub, RRT, sigmax, sigmay, sigmaz ;
+  double hx, hy,hz, hxyz, omega, Qabs,epsair, epssub, RRT, sigmax, sigmay, sigmaz , prop;
    
   PetscOptionsGetReal(PETSC_NULL,"-hx",&hx,&flg);  MyCheckAndOutputDouble(flg,hx,"hx","hx");
   hy = hx;
@@ -62,6 +62,10 @@ int main(int argc, char **argv)
   hxyz = (Nz==1)*hx*hy + (Nz>1)*hx*hy*hz;  
 
   PetscOptionsGetReal(PETSC_NULL,"-omega",&omega,&flg);  MyCheckAndOutputDouble(flg,omega,"omega","omega");
+  PetscOptionsGetReal(PETSC_NULL,"-prop",&prop,&flg);  MyCheckAndOutputDouble(flg,prop,"prop","prop");
+  omega=omega/prop;
+  PetscPrintf(PETSC_COMM_WORLD,"the effective frequency in computation is %.16e \n",omega);
+
   PetscOptionsGetReal(PETSC_NULL,"-Qabs",&Qabs,&flg); 
   if (flg && Qabs>1e+15)
     Qabs=1.0/0.0;
@@ -73,19 +77,12 @@ int main(int argc, char **argv)
   sigmay = pmlsigma(RRT,Npmly*hy);
   sigmaz = pmlsigma(RRT,Npmlz*hz);  
 
-  char initialdata[PETSC_MAX_PATH_LEN], filenameComm[PETSC_MAX_PATH_LEN];
+  char initialdata[PETSC_MAX_PATH_LEN], randomcurrentpos[PETSC_MAX_PATH_LEN], filenameComm[PETSC_MAX_PATH_LEN];
   PetscOptionsGetString(PETSC_NULL,"-initialdata",initialdata,PETSC_MAX_PATH_LEN,&flg); MyCheckAndOutputChar(flg,initialdata,"initialdata","Inputdata file");
+  PetscOptionsGetString(PETSC_NULL,"-randomcurrentpos",randomcurrentpos,PETSC_MAX_PATH_LEN,&flg); MyCheckAndOutputChar(flg,randomcurrentpos,"randomcurrentpos","Random Current Postions file");
   PetscOptionsGetString(PETSC_NULL,"-filenameComm",filenameComm,PETSC_MAX_PATH_LEN,&flg); MyCheckAndOutputChar(flg,filenameComm,"filenameComm","Output filenameComm");
 
-  int clx,cly,clz, ncx, ncy, ncz;
-  PetscOptionsGetInt(PETSC_NULL,"-clx",&clx,&flg);  MyCheckAndOutputInt(flg,clx,"clx","clx");
- PetscOptionsGetInt(PETSC_NULL,"-cly",&cly,&flg);  MyCheckAndOutputInt(flg,cly,"cly","cly");
- PetscOptionsGetInt(PETSC_NULL,"-clz",&clz,&flg);  MyCheckAndOutputInt(flg,clz,"clz","clz");
-
- PetscOptionsGetInt(PETSC_NULL,"-ncx",&ncx,&flg);  MyCheckAndOutputInt(flg,ncx,"ncx","ncx");
- PetscOptionsGetInt(PETSC_NULL,"-ncy",&ncy,&flg);  MyCheckAndOutputInt(flg,ncy,"ncy","ncy");
- PetscOptionsGetInt(PETSC_NULL,"-ncz",&ncz,&flg);  MyCheckAndOutputInt(flg,ncz,"ncz","ncz");
-
+  
 
   /*--------------------------------------------------------*/
 
@@ -227,6 +224,17 @@ int main(int argc, char **argv)
     }
   fclose(ptf);
 
+  int *JRandPos;
+  JRandPos = (int *) malloc(NJ*sizeof(int));
+
+  ptf = fopen(randomcurrentpos,"r");
+  PetscPrintf(PETSC_COMM_WORLD,"reading from randomcurrentpos file \n");
+  for (i=0;i<NJ;i++)
+    {
+      fscanf(ptf,"%d",&JRandPos[i]);
+    }
+  fclose(ptf);
+
 
 
   /*----declare these data types, althought they may not be used for job 2 -----------------*/
@@ -240,28 +248,10 @@ int main(int argc, char **argv)
   /*----Now based on Command Line, Do the corresponding job----*/
   /*----------------------------------------------------------------*/
 
-
-  int Job;
-  PetscOptionsGetInt(PETSC_NULL,"-Job",&Job,&flg);  MyCheckAndOutputInt(flg,Job,"Job","The Job indicator you set");
   
-  int numofvar=(Job==1)*Mxyz + (Job==3);
+  int numofvar=Mxyz;
 
-  /*--------   convert the epsopt array to epsSReal (if job!=optmization) --------*/
-  if (Job==2 || Job ==3)
-    {
-      // copy epsilon from file to epsSReal; (different from FindOpt.c, because epsilon is not degree-of-freedoms in computeQ.
-      // i) create a array to read file (done above in epsopt); ii) convert the array to epsSReal;
-      int ns, ne;
-      ierr = VecGetOwnershipRange(epsSReal,&ns,&ne);
-      for(i=ns;i<ne;i++)
-	{ ierr=VecSetValue(epsSReal,i,epsopt[i],INSERT_VALUES); 
-	  CHKERRQ(ierr); }      
-      ierr = VecAssemblyBegin(epsSReal); CHKERRQ(ierr);
-      ierr = VecAssemblyEnd(epsSReal);  CHKERRQ(ierr);
-    }
-
-  if (Job==1 || Job==3)  // optimization bounds setup;
-    {      
+  /*--------   convert the epsopt array to epsSReal (if job!=optmization) --------*/      
       PetscOptionsGetInt(PETSC_NULL,"-maxeval",&maxeval,&flg);  MyCheckAndOutputInt(flg,maxeval,"maxeval","max number of evaluation");
       PetscOptionsGetInt(PETSC_NULL,"-maxtime",&maxtime,&flg);  MyCheckAndOutputInt(flg,maxtime,"maxtime","max time of evaluation");
       PetscOptionsGetInt(PETSC_NULL,"-mynloptalg",&mynloptalg,&flg);  MyCheckAndOutputInt(flg,mynloptalg,"mynloptalg","The algorithm used ");
@@ -286,69 +276,14 @@ int main(int argc, char **argv)
       nlopt_set_upper_bounds(opt,ub);
       nlopt_set_maxeval(opt,maxeval);
       nlopt_set_maxtime(opt,maxtime);
-    }
-
-
-
-
-  switch (Job)
-    {
-    case 1:
-      {
-	myfundataRHStype myfundata = {Nx, Ny, Nz,clx,cly,clz,ncx,ncy,ncz,Jdirection, hx, hy, hz, omega, ksp, epspmlQ, epscoef, epsmedium, epsC, epsCi, epsP, x, cglambda, J, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, M, from, to, scatter, filenameComm};
-      nlopt_set_max_objective(opt, ResonatorSolverRHS, &myfundata);
+    
+  
+      myfundataSolartype myfundata = {Nx, Ny, Nz, NJ, hx, hy, hz, omega, ksp, epspmlQ, epscoef, epsmedium, epsC, epsCi, epsP, x, cglambda, J, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, M, from, to, scatter, filenameComm, JRandPos};
+      nlopt_set_max_objective(opt, ResonatorSolverSolar, &myfundata);
       result = nlopt_optimize(opt,epsopt,&maxf);
-      }      
-      break;
-    case 2 :  //AnalyzeStructure
-      { 
-	int Linear, Eig, maxeigit;
-	PetscOptionsGetInt(PETSC_NULL,"-Linear",&Linear,&flg);  MyCheckAndOutputInt(flg,Linear,"Linear","Linear solver indicator");
-	PetscOptionsGetInt(PETSC_NULL,"-Eig",&Eig,&flg);  MyCheckAndOutputInt(flg,Eig,"Eig","Eig solver indicator");
-	PetscOptionsGetInt(PETSC_NULL,"-maxeigit",&maxeigit,&flg);  MyCheckAndOutputInt(flg,maxeigit,"maxeigit","maximum number of Eig solver iterations is");
+  
 
-
-	myfundataRHStype myfundata = {Nx, Ny, Nz,clx,cly,clz,ncx,ncy,ncz,Jdirection, hx, hy, hz, omega, ksp, epspmlQ, epscoef, epsmedium, epsC, epsCi, epsP, x, cglambda, J, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, M, from, to, scatter, filenameComm};
-
-	/*----------------------------------*/
-	EigenSolver(&myfundata,Linear, Eig, maxeigit);
-	/*----------------------------------*/
-      }
-      break;   
-
-    case 3: //computeQ
-      {
-	int optmax;
-	PetscOptionsGetInt(PETSC_NULL,"-optmax",&optmax,&flg);  MyCheckAndOutputInt(flg,optmax,"optmax","Indicator for max ComputeQ is ");
-
-	double ldoscenter;
-	PetscOptionsGetReal(PETSC_NULL,"-ldoscenter",&ldoscenter,&flg);  MyCheckAndOutputDouble(flg,ldoscenter,"ldoscenter","ldoscenter");
-
-	// use spartptdouble to store current omega;
-	double spareptdouble[] = {0}; //initialization;
-	myfundataRHStypeq myfundataq = {Nx, Ny, Nz,clx,cly,clz,ncx,ncy,ncz,Jdirection, hx, hy, hz, omega, ldoscenter, spareptdouble, ksp, epspmlQ, epscoef, epsC, epsCi, epsP, x, cglambda, J, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, M, from, to, scatter, filenameComm};
-       
-	varopt = (double *) malloc(numofvar*sizeof(double));
-	varopt[0] = omega;
-      
-	if(optmax==1)
-	  nlopt_set_max_objective(opt, ldos, &myfundataq);
-	else
-	  nlopt_set_min_objective(opt, ldosdiff, &myfundataq);
-      
-	result = nlopt_optimize(opt,varopt,&maxf);
-	PetscPrintf(PETSC_COMM_WORLD,"--the frequency intersted is %0.16e------ \n",*varopt);
-	free(varopt);
-      }
-      break;
-
-    default:
-      PetscPrintf(PETSC_COMM_WORLD,"--------Inteeresting! You're doing nothing!--------\n ");
- }
-
-
-  if(Job==1 || Job==3)
-    {
+ 
       /* print the optimization parameters */
 #if 0
       double xrel, frel, fabs;
@@ -373,8 +308,7 @@ int main(int argc, char **argv)
       PetscPrintf(PETSC_COMM_WORLD,"nlopt returned value is %d \n", result);
 
 
-      if(Job==1)
-	{ //OutputVec(PETSC_COMM_WORLD, epsopt,filenameComm, "epsopt.m");
+	 //OutputVec(PETSC_COMM_WORLD, epsopt,filenameComm, "epsopt.m");
 	   OutputVec(PETSC_COMM_WORLD, epsSReal,filenameComm, "epsSReal.m");
 
 	  int rankA;
@@ -387,10 +321,10 @@ int main(int argc, char **argv)
 		fprintf(ptf,"%0.16e \n",epsopt[i]);
 	      fclose(ptf);
 	    }  
-	}
+	
 
       nlopt_destroy(opt);
-    }
+    
      
 
 
@@ -404,6 +338,7 @@ int main(int argc, char **argv)
   /* ----------------------Destroy Vecs and Mats----------------------------*/ 
 
   free(epsopt);
+  free(JRandPos);
   free(lb);
   free(ub);
   ierr = VecDestroy(J); CHKERRQ(ierr);
