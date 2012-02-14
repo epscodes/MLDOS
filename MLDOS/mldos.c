@@ -251,7 +251,9 @@ int main(int argc, char **argv)
   PetscPrintf(PETSC_COMM_WORLD,"reading from input files \n");
 
   int i;
-  for (i=0;i<Mxyz;i++)
+  // set the dielectric at the center is fixed, and alwyas high
+  epsopt[0]=myub;
+  for (i=1;i<Mxyz;i++)
     { //PetscPrintf(PETSC_COMM_WORLD,"current eps reading is %lf \n",epsopt[i]);
       fscanf(ptf,"%lf",&epsopt[i]);
     }
@@ -304,7 +306,10 @@ int main(int argc, char **argv)
       lb = (double *) malloc(numofvar*sizeof(double));
       ub = (double *) malloc(numofvar*sizeof(double));
 
-      for(i=0;i<numofvar;i++)
+      // the dielectric constant at center is fixed!
+      lb[0]=myub;
+      ub[0]=myub;
+      for(i=1;i<numofvar;i++)
 	{
 	  lb[i] = mylb;
 	  ub[i] = myub;

@@ -137,8 +137,7 @@ PetscErrorCode ModifyMatDiagonals( Mat M, Mat A, Mat D, Vec epsSReal, Vec epspml
   // OutputVec(PETSC_COMM_WORLD,epsC,"TMP","epsC.m"); // output eps in the whole domain for calculating V in matlab;
 
   ierr = VecPointwiseMult(epsC,epsC,epspmlQ); CHKERRQ(ierr);
-
-
+ 
   //store the difference = current-previous into current epsilon;
   ierr =VecAXPY(epsC,-1.0,epsP);CHKERRQ(ierr);   // epsC is the epsDiff now;
 
