@@ -252,8 +252,8 @@ int main(int argc, char **argv)
 
   int i;
   // set the dielectric at the center is fixed, and alwyas high
-  epsopt[0]=myub;
-  for (i=1;i<Mxyz;i++)
+  //epsopt[0]=myub; is defined below near lb and ub;
+  for (i=0;i<Mxyz;i++)
     { //PetscPrintf(PETSC_COMM_WORLD,"current eps reading is %lf \n",epsopt[i]);
       fscanf(ptf,"%lf",&epsopt[i]);
     }
@@ -307,13 +307,20 @@ int main(int argc, char **argv)
       ub = (double *) malloc(numofvar*sizeof(double));
 
       // the dielectric constant at center is fixed!
-      lb[0]=myub;
-      ub[0]=myub;
-      for(i=1;i<numofvar;i++)
+      for(i=0;i<numofvar;i++)
 	{
 	  lb[i] = mylb;
 	  ub[i] = myub;
 	}  //initial guess, lower bounds, upper bounds;
+
+      //fix the dielectric at the center to be high for topology optimization;
+      if (Job==1)
+	{
+	  epsopt[0]=myub;
+	  lb[0]=myub;
+	  ub[0]=myub;
+	}
+
 
       opt = nlopt_create(mynloptalg, numofvar);
 
