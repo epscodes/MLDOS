@@ -37,7 +37,7 @@ int main(int argc, char **argv)
   PetscOptionsGetInt(PETSC_NULL,"-Npmlx",&Npmlx,&flg);  MyCheckAndOutputInt(flg,Npmlx,"Npmlx","Npmlx");
   PetscOptionsGetInt(PETSC_NULL,"-Npmly",&Npmly,&flg);  MyCheckAndOutputInt(flg,Npmly,"Npmly","Npmly");
   PetscOptionsGetInt(PETSC_NULL,"-Npmlz",&Npmlz,&flg);  MyCheckAndOutputInt(flg,Npmlz,"Npmlz","Npmlz");
-   PetscOptionsGetInt(PETSC_NULL,"-NJ",&NJ,&flg);  MyCheckAndOutputInt(flg,NJ,"NJ","NJ");
+  PetscOptionsGetInt(PETSC_NULL,"-NJ",&NJ,&flg);  MyCheckAndOutputInt(flg,NJ,"NJ","NJ");
 
   Nxyz = Nx*Ny*Nz;
   Mxyz = Mx*My*((Mzslab==0)?Mz:1);
@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 
   PetscOptionsGetReal(PETSC_NULL,"-omega",&omega,&flg);  MyCheckAndOutputDouble(flg,omega,"omega","omega");
   PetscOptionsGetReal(PETSC_NULL,"-prop",&prop,&flg);  MyCheckAndOutputDouble(flg,prop,"prop","prop");
-  omega=omega/prop;
+  omega=omega*prop;
   PetscPrintf(PETSC_COMM_WORLD,"the effective frequency in computation is %.16e \n",omega);
 
   PetscOptionsGetReal(PETSC_NULL,"-Qabs",&Qabs,&flg); 
@@ -252,78 +252,78 @@ int main(int argc, char **argv)
   int numofvar=Mxyz;
 
   /*--------   convert the epsopt array to epsSReal (if job!=optmization) --------*/      
-      PetscOptionsGetInt(PETSC_NULL,"-maxeval",&maxeval,&flg);  MyCheckAndOutputInt(flg,maxeval,"maxeval","max number of evaluation");
-      PetscOptionsGetInt(PETSC_NULL,"-maxtime",&maxtime,&flg);  MyCheckAndOutputInt(flg,maxtime,"maxtime","max time of evaluation");
-      PetscOptionsGetInt(PETSC_NULL,"-mynloptalg",&mynloptalg,&flg);  MyCheckAndOutputInt(flg,mynloptalg,"mynloptalg","The algorithm used ");
+  PetscOptionsGetInt(PETSC_NULL,"-maxeval",&maxeval,&flg);  MyCheckAndOutputInt(flg,maxeval,"maxeval","max number of evaluation");
+  PetscOptionsGetInt(PETSC_NULL,"-maxtime",&maxtime,&flg);  MyCheckAndOutputInt(flg,maxtime,"maxtime","max time of evaluation");
+  PetscOptionsGetInt(PETSC_NULL,"-mynloptalg",&mynloptalg,&flg);  MyCheckAndOutputInt(flg,mynloptalg,"mynloptalg","The algorithm used ");
 
-      PetscOptionsGetReal(PETSC_NULL,"-mylb",&mylb,&flg);  MyCheckAndOutputDouble(flg,mylb,"mylb","optimization lb");
-      PetscOptionsGetReal(PETSC_NULL,"-myub",&myub,&flg);  MyCheckAndOutputDouble(flg,myub,"myub","optimization ub");
+  PetscOptionsGetReal(PETSC_NULL,"-mylb",&mylb,&flg);  MyCheckAndOutputDouble(flg,mylb,"mylb","optimization lb");
+  PetscOptionsGetReal(PETSC_NULL,"-myub",&myub,&flg);  MyCheckAndOutputDouble(flg,myub,"myub","optimization ub");
 
       
  
-      lb = (double *) malloc(numofvar*sizeof(double));
-      ub = (double *) malloc(numofvar*sizeof(double));
+  lb = (double *) malloc(numofvar*sizeof(double));
+  ub = (double *) malloc(numofvar*sizeof(double));
 
-      for(i=0;i<numofvar;i++)
-	{
-	  lb[i] = mylb;
-	  ub[i] = myub;
-	}  //initial guess, lower bounds, upper bounds;
+  for(i=0;i<numofvar;i++)
+    {
+      lb[i] = mylb;
+      ub[i] = myub;
+    }  //initial guess, lower bounds, upper bounds;
 
-      opt = nlopt_create(mynloptalg, numofvar);
+  opt = nlopt_create(mynloptalg, numofvar);
 
-      nlopt_set_lower_bounds(opt,lb);
-      nlopt_set_upper_bounds(opt,ub);
-      nlopt_set_maxeval(opt,maxeval);
-      nlopt_set_maxtime(opt,maxtime);
+  nlopt_set_lower_bounds(opt,lb);
+  nlopt_set_upper_bounds(opt,ub);
+  nlopt_set_maxeval(opt,maxeval);
+  nlopt_set_maxtime(opt,maxtime);
     
   
-      myfundataSolartype myfundata = {Nx, Ny, Nz, NJ, hx, hy, hz, omega, ksp, epspmlQ, epscoef, epsmedium, epsC, epsCi, epsP, x, cglambda, J, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, M, from, to, scatter, filenameComm, JRandPos};
-      nlopt_set_max_objective(opt, ResonatorSolverSolar, &myfundata);
-      result = nlopt_optimize(opt,epsopt,&maxf);
+  myfundataSolartype myfundata = {Nx, Ny, Nz, NJ, hx, hy, hz, omega, ksp, epspmlQ, epscoef, epsmedium, epsC, epsCi, epsP, x, cglambda, J, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, M, from, to, scatter, filenameComm, JRandPos};
+  nlopt_set_max_objective(opt, ResonatorSolverSolar, &myfundata);
+  result = nlopt_optimize(opt,epsopt,&maxf);
   
 
  
-      /* print the optimization parameters */
+  /* print the optimization parameters */
 #if 0
-      double xrel, frel, fabs;
-      // double *xabs;
-      frel=nlopt_get_ftol_rel(opt);
-      fabs=nlopt_get_ftol_abs(opt);
-      xrel=nlopt_get_xtol_rel(opt);
-      PetscPrintf(PETSC_COMM_WORLD,"nlopt frel is %g \n",frel);
-      PetscPrintf(PETSC_COMM_WORLD,"nlopt fabs is %g \n",fabs);
-      PetscPrintf(PETSC_COMM_WORLD,"nlopt xrel is %g \n",xrel);
-      //nlopt_result nlopt_get_xtol_abs(const nlopt_opt opt, double *tol);
+  double xrel, frel, fabs;
+  // double *xabs;
+  frel=nlopt_get_ftol_rel(opt);
+  fabs=nlopt_get_ftol_abs(opt);
+  xrel=nlopt_get_xtol_rel(opt);
+  PetscPrintf(PETSC_COMM_WORLD,"nlopt frel is %g \n",frel);
+  PetscPrintf(PETSC_COMM_WORLD,"nlopt fabs is %g \n",fabs);
+  PetscPrintf(PETSC_COMM_WORLD,"nlopt xrel is %g \n",xrel);
+  //nlopt_result nlopt_get_xtol_abs(const nlopt_opt opt, double *tol);
 #endif
-      /*--------------*/
+  /*--------------*/
 
-      if (result < 0) {
-	PetscPrintf(PETSC_COMM_WORLD,"nlopt failed! \n", result);
-      }
-      else {
-	PetscPrintf(PETSC_COMM_WORLD,"found extremum  %0.16e\n", maxf); 
-      }
+  if (result < 0) {
+    PetscPrintf(PETSC_COMM_WORLD,"nlopt failed! \n", result);
+  }
+  else {
+    PetscPrintf(PETSC_COMM_WORLD,"found extremum  %0.16e\n", maxf); 
+  }
 
-      PetscPrintf(PETSC_COMM_WORLD,"nlopt returned value is %d \n", result);
+  PetscPrintf(PETSC_COMM_WORLD,"nlopt returned value is %d \n", result);
 
 
-	 //OutputVec(PETSC_COMM_WORLD, epsopt,filenameComm, "epsopt.m");
-	   OutputVec(PETSC_COMM_WORLD, epsSReal,filenameComm, "epsSReal.m");
+  //OutputVec(PETSC_COMM_WORLD, epsopt,filenameComm, "epsopt.m");
+  OutputVec(PETSC_COMM_WORLD, epsSReal,filenameComm, "epsSReal.m");
 
-	  int rankA;
-	  MPI_Comm_rank(PETSC_COMM_WORLD, &rankA);
+  int rankA;
+  MPI_Comm_rank(PETSC_COMM_WORLD, &rankA);
 
-	  if(rankA==0)
-	    {
-	      ptf = fopen(strcat(filenameComm,"epsopt.txt"),"w");
-	      for (i=0;i<Mxyz;i++)
-		fprintf(ptf,"%0.16e \n",epsopt[i]);
-	      fclose(ptf);
-	    }  
+  if(rankA==0)
+    {
+      ptf = fopen(strcat(filenameComm,"epsopt.txt"),"w");
+      for (i=0;i<Mxyz;i++)
+	fprintf(ptf,"%0.16e \n",epsopt[i]);
+      fclose(ptf);
+    }  
 	
 
-      nlopt_destroy(opt);
+  nlopt_destroy(opt);
     
      
 
