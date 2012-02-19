@@ -65,13 +65,22 @@ double ResonatorSolverSolar(int Mxyz,double *epsopt, double *grad, void *data)
   VecSet(epsgrad,0.0);
   VecAssemblyBegin(epsgrad);
   VecAssemblyEnd(epsgrad);
+  
+ 
+  // copy epsopt to epsSReal;
+  ierr=ArrayToVec(epsopt, epsSReal); CHKERRQ(ierr);
+
+  // new Vec, doubles for J*epsjloc*E;
+  double epsjloc;
+  
+  Vec epsCurrent; //epsCurrent is the current real epsilon everywhere; while epsC is calculated in ModifyMatDiagonals but with epsPML; here I need purely real epsilon;
+  VecDuplicate(epsC,&epsCurrent); 
+  ierr =MatMult(A, epsSReal,epsCurrent); CHKERRQ(ierr); 
+  ierr = VecAXPY(epsCurrent,1.0,epsmedium); CHKERRQ(ierr);
 
   Vec tepsgrad;
   VecDuplicate(epsgrad,&tepsgrad);
   /*-------------------------*/
- 
-  // copy epsopt to epsSReal;
-  ierr=ArrayToVec(epsopt, epsSReal); CHKERRQ(ierr);
  
   // Update the diagonals of M Matrix;
   ModifyMatDiagonals(M, A,D, epsSReal, epspmlQ, epsmedium, epsC, epsCi, epsP, Nxyz,omega);
@@ -87,14 +96,16 @@ double ResonatorSolverSolar(int Mxyz,double *epsopt, double *grad, void *data)
   double tldos, ldos=0;//ldos = -Re((weight.*J)'*E) or -Re(E'*(weight*J));
   int i;
 #if 1
-      //clock_t tstart, tend;  int tpast; tstart=clock();  
-      PetscLogDouble t1,t2,tpast;
-      ierr = PetscGetTime(&t1);CHKERRQ(ierr);
+  //clock_t tstart, tend;  int tpast; tstart=clock();  
+  PetscLogDouble t1,t2,tpast;
+  ierr = PetscGetTime(&t1);CHKERRQ(ierr);
 #endif
 
   for (i=0; i<NJ; i++)
     {
       VecSet(J,0.0); // initialization (important!)
+      VecAssemblyBegin(epsgrad);
+      VecAssemblyEnd(epsgrad);
       SourceSingleSetGlobal(PETSC_COMM_WORLD,J, JRandPos[i],1.0/hxyz);	  
       // now b=i*omega*J;
       ierr = MatMult(D,J,b);CHKERRQ(ierr);
@@ -124,13 +135,16 @@ double ResonatorSolverSolar(int Mxyz,double *epsopt, double *grad, void *data)
 #endif
 
       /*--------------Finish KSP Solving---------------*/
-      // maximize real(E*eps*J) = x*(epsSReal+1)*J; use J, not weightedJ;
-      VecSet(tmp,1.0);
-      VecAXPY(tmp,1.0,epsSReal);
-      VecPointwiseMult(tmp,J,tmp);
-      VecDot(x,tmp,&tldos);
+      // Get the value epsjloc;
+      VecSet(tmp,0.0);
+      VecSetValue(tmp,JRandPos[i],1.0,INSERT_VALUES);
+      VecAssemblyBegin(tmp);
+      VecAssemblyEnd(tmp);
+      VecDot(tmp,epsCurrent,&epsjloc); 
 
-      tldos = -1.0*tldos*hxyz;
+      // maximize real(E*eps*J) = x*(epsSReal+1)*J; use J, not weightedJ;
+      VecDot(x,J,&tldos);
+      tldos = -1.0*epsjloc*tldos*hxyz;
       ldos += tldos;
 
       PetscPrintf(PETSC_COMM_WORLD,"---The current ldos at step %d (current position %d) is %.16e \n", count, i, tldos);
@@ -145,24 +159,34 @@ double ResonatorSolverSolar(int Mxyz,double *epsopt, double *grad, void *data)
 
       if (grad) {  
 	/* Adjoint-Method tells us Mtran*lambba =J -> x = i*omega/weight*conj(lambda);  therefore the derivative is Re(x^2*weight*i*omega*(1+i/Qabs)*epspml) = Re(x^2*epscoef) ; here, I omit two minus signs: one is M'*lam= -j; the other is -Re(***). minus minus is a plus.*/
-	int aconj=0;
+	int aconj=0;	
 	CmpVecProd(x,epscoef,tmp,D,Nxyz,aconj,tmpa,tmpb);
 	CmpVecProd(x,tmp,tepsgrad,D,Nxyz,aconj,tmpa,tmpb);
+	// tepsgrad is the old derivate; new derivative = eps_center*tepsgrad + ldos_c;
+	// where ldos_c is a zero vector except at one postion = ldos;
+	VecScale(tepsgrad,epsjloc*hxyz);
 
-
-	VecAXPY(epsgrad,hxyz,tepsgrad); // epsgrad+=tepsgrad average;//the factor hxyz handle both 2D and 3D;
+	VecSet(tmp,0.0);
+	VecSetValue(tmp,JRandPos[i],1.0,INSERT_VALUES);
+	VecAssemblyBegin(tmp);
+	VecAssemblyEnd(tmp);
+	VecScale(tmp, tldos/epsjloc);
+ 
+	VecAXPY(tepsgrad,1.0,tmp); // tepsgrad(i) = tepsgrad(i) + tldos/epsjloc;
+	VecAXPY(epsgrad,1.0,tepsgrad); // epsgrad+=tepsgrad;
+	
       }
 
     }
 
 #if 1
-      ierr = PetscGetTime(&t2);CHKERRQ(ierr);
-      tpast = t2 - t1;
+  ierr = PetscGetTime(&t2);CHKERRQ(ierr);
+  tpast = t2 - t1;
 
-      int rank;
-      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-      if(rank==0)
-	PetscPrintf(PETSC_COMM_SELF,"---The runing time is %f s \n",tpast);
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  if(rank==0)
+    PetscPrintf(PETSC_COMM_SELF,"---The runing time is %f s \n",tpast);
 #endif   
 
 
@@ -176,8 +200,6 @@ double ResonatorSolverSolar(int Mxyz,double *epsopt, double *grad, void *data)
 
   // vgrad =A'*epsgrad; A' is the restriction matrix; Mapped to the small grid;
   ierr = MatMultTranspose(A,epsgrad,vgrad);CHKERRQ(ierr);   
-  //OutputVec(PETSC_COMM_WORLD,epsgrad,"epsgrad",".m");
-  //OutputVec(PETSC_COMM_WORLD,vgrad,"vgrad",".m");
 
   // copy vgrad (distributed vector) to a regular array grad;
   ierr = VecToArray(vgrad,grad,scatter,from,to,vgradlocal,Mxyz);
@@ -209,7 +231,7 @@ double ResonatorSolverSolar(int Mxyz,double *epsopt, double *grad, void *data)
 
   /*---Destroy Vectors *----*/
   ierr=VecDestroy(tepsgrad); CHKERRQ(ierr);
-  
+  ierr=VecDestroy(epsCurrent);CHKERRQ(ierr);
   count++;
   return ldos;
 }
