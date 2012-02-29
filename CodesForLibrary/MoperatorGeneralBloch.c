@@ -1,7 +1,9 @@
 #include <petsc.h>
 #include <complex.h>
-
+#include <math.h>
 typedef double complex dcomp;
+
+/*--MoperatorGeneralBloch contains -epsilon*omega^2 term--- different from MoperatorGeneral codes ----*/
 
 /*
 Generalize the MoperatorGeneral to handle the Bloch Boundary Condition;
@@ -24,8 +26,8 @@ Output parameter: sparse matrix M.
 
 
 #undef __FUNCT__ 
-#define __FUNCT__ "MoperatorGeneral"
-PetscErrorCode MoperatorGeneralBloch(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, double hx, double hy, double hz, int bx[2], int by[2], int bz[2], double *muinv, int DimPeriod, double blochbc[3][2])
+#define __FUNCT__ "MoperatorGeneralBloch"
+PetscErrorCode MoperatorGeneralBloch(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, double hx, double hy, double hz, int bx[2], int by[2], int bz[2], double *muinv, int DimPeriod, double blochbc[3], Vec epsOmegasqr, Vec epsOmegasqri)
  /* bx[lo/hi = 0/1] = 0/1/-1: dirichlet/even/odd */
 {
   Mat A;
@@ -63,6 +65,12 @@ PetscErrorCode MoperatorGeneralBloch(MPI_Comm comm, Mat *Aout, int Nx, int Ny, i
       for(k=0; k<3; k++){
 	b[ic][j][k] =  ( (ic==0)*bx[j] + (ic==1)*by[j] + (ic==2)*bz[j])*( k==ic ? -1 :1);
       }
+
+  /* convert epsOmegasqr to array */
+  double *c, *ci;
+  ierr = VecGetArray(epsOmegasqr, &c); CHKERRQ(ierr);
+  ierr = VecGetArray(epsOmegasqri, &ci); CHKERRQ(ierr);
+
 
   for (i = ns; i < ne; ++i) {
     int ixyz[3], ic, ir, jr;
@@ -112,7 +120,7 @@ PetscErrorCode MoperatorGeneralBloch(MPI_Comm comm, Mat *Aout, int Nx, int Ny, i
 	  if(ic == (DimPeriod-1) || DimPeriod == 4 || (DimPeriod<0 && ic !=-(DimPeriod+1)) )
 	    {
 	      cidu = (1-Nxyz[ic])*cid; // periodic b.c; DimPeriod ==4 means period in all three dimensions;
-	      cidu_phase = blochbc[ic][0] + I*blochbc[ic][1];
+	      cidu_phase = cos(blochbc[ic]) + I*sin(blochbc[ic]);
 	    }
 	  else
 	    {
@@ -128,7 +136,7 @@ PetscErrorCode MoperatorGeneralBloch(MPI_Comm comm, Mat *Aout, int Nx, int Ny, i
 	  if(cp1 == (DimPeriod-1) || DimPeriod == 4 || (DimPeriod<0 && cp1!=-(DimPeriod+1)) )
 	    {
 	      cp1idl = (1-Nxyz[cp1])*cp1id;
-	      cp1idl_phase = blochbc[cp1][0] - I*blochbc[cp1][1];
+	      cp1idl_phase = cos(blochbc[cp1]) - I*sin(blochbc[cp1]);
 	    }
 	  else
 	    {
@@ -160,7 +168,7 @@ PetscErrorCode MoperatorGeneralBloch(MPI_Comm comm, Mat *Aout, int Nx, int Ny, i
 	  if( cp1== (DimPeriod-1) || DimPeriod == 4 || (DimPeriod<0 && cp1!=-(DimPeriod+1)) )
 	    {
 	      cp1idu = (1-Nxyz[cp1])*cp1id;
-	      cp1idu_phase = blochbc[cp1][0] + I*blochbc[cp1][1];
+	      cp1idu_phase = cos(blochbc[cp1]) + I*sin(blochbc[cp1]);
 	    }
 	  else
 	    {
@@ -179,7 +187,7 @@ PetscErrorCode MoperatorGeneralBloch(MPI_Comm comm, Mat *Aout, int Nx, int Ny, i
 	  else
 	    {
 	      cp1idl = (1-Nxyz[cp1])*cp1id;
-	      cp1idl_phase = blochbc[cp1][0] - I*blochbc[cp1][1];
+	      cp1idl_phase = cos(blochbc[cp1]) - I*sin(blochbc[cp1]);
 	    }
 	 }
      
@@ -201,7 +209,7 @@ PetscErrorCode MoperatorGeneralBloch(MPI_Comm comm, Mat *Aout, int Nx, int Ny, i
 	  if(ic == (DimPeriod-1) || DimPeriod == 4 || (DimPeriod<0 && ic!=-(DimPeriod+1)) )
 	    {
 	      cidu = (1-Nxyz[ic])*cid;
-	      cidu_phase = blochbc[ic][0] + I * blochbc[ic][1];
+	      cidu_phase = cos(blochbc[ic]) + I * sin(blochbc[ic]);
 	    }
 	  else
 	    {
@@ -218,7 +226,7 @@ PetscErrorCode MoperatorGeneralBloch(MPI_Comm comm, Mat *Aout, int Nx, int Ny, i
 	  if(cp2 == (DimPeriod-1) || DimPeriod == 4 || (DimPeriod<0 && cp2!=-(DimPeriod+1)) )
 	    {
 	      cp2idl = (1-Nxyz[cp2])*cp2id;
-	      cp2idl_phase = blochbc[cp2][0] - I*blochbc[cp2][1];
+	      cp2idl_phase = cos(blochbc[cp2]) - I*sin(blochbc[cp2]);
 	    }
 	  else
 	    {
@@ -235,7 +243,8 @@ PetscErrorCode MoperatorGeneralBloch(MPI_Comm comm, Mat *Aout, int Nx, int Ny, i
       c3 = -creal(cidu_phase * cp2idl_phase * muinvcp1lcmp * magicnum)/hh;
       c4 = creal(cp2idl_phase * muinvcp1lcmp * magicnum)/hh;
 
-      ierr = MatSetValue(A,i, icp2 + cidu + jrd, c1, ADD_VALUES); CHKERRQ(ierr);          ierr = MatSetValue(A,i, icp2 + jrd, c2, ADD_VALUES); CHKERRQ(ierr); 
+      ierr = MatSetValue(A,i, icp2 + cidu + jrd, c1, ADD_VALUES); CHKERRQ(ierr);
+      ierr = MatSetValue(A,i, icp2 + jrd, c2, ADD_VALUES); CHKERRQ(ierr); 
       ierr = MatSetValue(A,i, icp2 + cidu - cp2idl + jrd, c3, ADD_VALUES); CHKERRQ(ierr);
       ierr = MatSetValue(A,i, icp2 - cp2idl + jrd, c4, ADD_VALUES); CHKERRQ(ierr);
 	       
@@ -247,7 +256,7 @@ PetscErrorCode MoperatorGeneralBloch(MPI_Comm comm, Mat *Aout, int Nx, int Ny, i
 	  if (cp2== (DimPeriod-1) || DimPeriod == 4 || (DimPeriod<0 && cp2 !=-(DimPeriod+1)) )
 	    {
 	      cp2idu = (1-Nxyz[cp2])*cp2id;
-	      cp2idu_phase = blochbc[cp2][0] + I * blochbc[cp2][1];
+	      cp2idu_phase = cos(blochbc[cp2]) + I * sin(blochbc[cp2]);
 	    }
 	  else
 	    {
@@ -267,7 +276,7 @@ PetscErrorCode MoperatorGeneralBloch(MPI_Comm comm, Mat *Aout, int Nx, int Ny, i
 	  else
 	    {
 	      cp2idl = (1-Nxyz[cp2])*cp2id;
-	      cp2idl_phase = blochbc[cp2][0] - I*blochbc[cp2][1];
+	      cp2idl_phase = cos(blochbc[cp2]) - I*sin(blochbc[cp2]);
 	    }
 	}
    
@@ -281,13 +290,26 @@ PetscErrorCode MoperatorGeneralBloch(MPI_Comm comm, Mat *Aout, int Nx, int Ny, i
       ierr = MatSetValue(A,i, i + cp2idu + jrd, c1, ADD_VALUES); CHKERRQ(ierr);
       ierr = MatSetValue(A,i, i + jrd, c2, ADD_VALUES); CHKERRQ(ierr);
       ierr = MatSetValue(A,i, i - cp2idl + jrd, c3, ADD_VALUES); CHKERRQ(ierr);
-
-
-
+   
       /*---add tiny number to diagonals to keep nonzero positions on diagonal for future---*/
       if (flg && (jrd!=0))      
 	ierr=MatSetValue(A,i,i+jrd,1e-125,ADD_VALUES);CHKERRQ(ierr);
     }
+
+    /* M = M - esp*omega^2; add -epsomega^2 in the diagonals */
+      double vr, vi;
+      if (ir==0)
+	{ 
+	  vr = c[i-ns];
+	  vi = -ci[i-ns];
+	}
+      else
+	{
+	   vr = ci[i-ns];
+	   vi = c[i-ns];
+	}
+      ierr = MatSetValue(A,i,i,-vr,ADD_VALUES);CHKERRQ(ierr);
+      ierr = MatSetValue(A,i,(i+Nxyzc)%(Nxyzcr), (1.0*pow(-1,i/(Nxyzc)))*1.0*vi,ADD_VALUES); CHKERRQ(ierr);  
 
   }
    
@@ -295,6 +317,9 @@ PetscErrorCode MoperatorGeneralBloch(MPI_Comm comm, Mat *Aout, int Nx, int Ny, i
      
      ierr = MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
      ierr = MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+
+     ierr = VecRestoreArray(epsOmegasqr, &c); CHKERRQ(ierr);
+     ierr = VecRestoreArray(epsOmegasqri, &ci); CHKERRQ(ierr);
 
      ierr = PetscObjectSetName((PetscObject) A,
 			       "InitialMOpGeneral"); CHKERRQ(ierr);
