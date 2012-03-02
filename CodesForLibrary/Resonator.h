@@ -183,5 +183,5 @@ typedef struct {
 
 
 // datatype used for optimization of dielectric structure with Solar Problem;
-typedef struct { double Somega;
+typedef struct { double Somega; double *Sptepsinput;
 } myfundataSolartype;
