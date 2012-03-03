@@ -226,7 +226,7 @@ int main(int argc, char **argv)
   nlopt_set_maxtime(opt,maxtime);
     
   
-  myfundataSolartype myfundata = {omega};
+  myfundataSolartype myfundata = {omega, epsopt};
   nlopt_set_max_objective(opt, ResonatorSolverSolar, &myfundata);
   result = nlopt_optimize(opt,epsopt,&maxf);
   

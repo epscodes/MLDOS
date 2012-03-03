@@ -142,7 +142,7 @@ int SolarComputeKernel(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, double
   ierr = KSPSetFromOptions(ksp);CHKERRQ(ierr);
 
   /*Create Vectors */
-  Vec J, b, x, tmp, tmpa, tmpb, tepsgrad;
+  Vec J, b, x, tmp, tmpa, tmpb;
   ierr = VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, 6*Nxyz, &J);CHKERRQ(ierr);
   ierr=VecDuplicate(J,&b); CHKERRQ(ierr);
   ierr=VecDuplicate(J,&x); CHKERRQ(ierr);
@@ -150,7 +150,6 @@ int SolarComputeKernel(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, double
   ierr=VecDuplicate(J,&tmp);CHKERRQ(ierr);
   ierr=VecDuplicate(J,&tmpa);CHKERRQ(ierr);
   ierr=VecDuplicate(J,&tmpb);CHKERRQ(ierr);
-  ierr=VecDuplicate(J,&tepsgrad);CHKERRQ(ierr);
 
   /*Create Doubles*/
   double epsjloc;  
@@ -213,8 +212,11 @@ int SolarComputeKernel(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, double
       /*------------------------------------------------*/
       /*-----------Now take care of gradients-------------*/
       /*------------------------------------------------*/
-      //if (grad)
+      if (kepsgrad != NULL)
       {  
+	Vec tepsgrad;
+	ierr=VecDuplicate(J,&tepsgrad);CHKERRQ(ierr);
+
 	/* Adjoint-Method tells us Mtran*lambba =J -> x = i*omega/weight*conj(lambda);  therefore the derivative is Re(x^2*weight*i*omega*(1+i/Qabs)*epspml) = Re(x^2*epscoef) ; here, I omit two minus signs: one is M'*lam= -j; the other is -Re(***). minus minus is a plus.*/
 	int aconj=0;	
 	CmpVecProd(x,epscoef,tmp,D,Nxyz,aconj,tmpa,tmpb);
@@ -231,7 +233,9 @@ int SolarComputeKernel(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, double
  
 	VecAXPY(tepsgrad,1.0,tmp); // tepsgrad(i) = tepsgrad(i) + tldos/epsjloc;
 	VecAXPY(kepsgrad,1.0,tepsgrad); // epsgrad+=tepsgrad;
-	
+	 
+	ierr=VecDestroy(tepsgrad);CHKERRQ(ierr);
+		
       }
 
     }
@@ -247,8 +251,10 @@ int SolarComputeKernel(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, double
 #endif   
 
   // take the average;
-  VecScale(kepsgrad,1.0/NJ);
-  *ptkldos = *ptkldos/NJ; 
+  *ptkldos = *ptkldos/NJ;
+  if (kepsgrad != NULL)
+    VecScale(kepsgrad,1.0/NJ);
+ 
   PetscPrintf(PETSC_COMM_WORLD," tpkldos is %.16e\n ", *ptkldos);
 
   //Destroy Stuff;
@@ -258,7 +264,6 @@ int SolarComputeKernel(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, double
   ierr=VecDestroy(tmp); CHKERRQ(ierr);
   ierr=VecDestroy(tmpa); CHKERRQ(ierr);
   ierr=VecDestroy(tmpb); CHKERRQ(ierr);
-  ierr=VecDestroy(tepsgrad);CHKERRQ(ierr);
   ierr=MatDestroy(M); CHKERRQ(ierr);
   ierr=KSPDestroy(ksp);CHKERRQ(ierr);
 

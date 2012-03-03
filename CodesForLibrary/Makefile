@@ -1,8 +1,8 @@
-all: MoperatorGeneral.o SourceGeneration.o PML.o Eps.o MathTools.o Output.o ldos.o  ResonatorSolver.o EigenSolver.o ResonatorSolverRHS.o ResonatorSolverPOLXY.o ResonatorSolverSolar.o MoperatorGeneralBloch.o
+all: MoperatorGeneral.o SourceGeneration.o PML.o Eps.o MathTools.o Output.o ldos.o  ResonatorSolver.o EigenSolver.o ResonatorSolverRHS.o ResonatorSolverPOLXY.o ResonatorSolverSolar.o MoperatorGeneralBloch.o ldossolar.o
 
 include ${PETSC_DIR}/conf/variables
 include ${PETSC_DIR}/conf/rules
-CLEANFILES =  MoperatorGeneral.o SourceGeneration.o PML.o EPS.o MathTools.o Output.o ldos.o  ResonatorSolver.o EigenSolver.o ResonatorSolverRHS.o ResonatorSolverPOLXY.o ResonatorSolverSolar.o MoperatorGeneralBloch.o
+CLEANFILES =  MoperatorGeneral.o SourceGeneration.o PML.o EPS.o MathTools.o Output.o ldos.o  ResonatorSolver.o EigenSolver.o ResonatorSolverRHS.o ResonatorSolverPOLXY.o ResonatorSolverSolar.o MoperatorGeneralBloch.o ldossolar.o
 
 MoperatorGeneral: MoperatorGeneral.o
 	$(CLINKER) -Wall -g  -o $@ MoperatorGeneral.o $(PETSC_LIB)
@@ -30,5 +30,7 @@ ResonatorSolverSolar:ResonatorSolverSolar.o
 	$(CLINKER) -Wall -g -o $@ ResonatorSolverSolar.o
 MoperatorGeneralBloch: MoperatorGeneralBloch.o
 	$(CLINKER) -Wall -g  -o $@ MoperatorGeneralBloch.o
+ldossolar:ldossolar.o
+	$(CLINKER) -Wall -g -o $@ ldossolar.o
 
 
