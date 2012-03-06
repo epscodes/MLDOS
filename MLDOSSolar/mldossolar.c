@@ -11,6 +11,8 @@ double cldos=0;//set initial ldos;
 int ccount=1;
 extern int mma_verbose;
 
+int Job;
+
 /*-----------------CreateGlobalVariables ----------------*/
 int Nx, Ny, Nz, Nxyz, BCPeriod, NJ, nkx, nky, nkz, nkxyz;
 double hx, hy, hz, hxyz, omega, kxstep, kystep, kzstep, kxyzstep;
@@ -21,6 +23,7 @@ Vec epspmlQ, epsmedium, vR, epscoef;
 Mat A, D;
 IS from, to;
 char filenameComm[PETSC_MAX_PATH_LEN];
+double kxbase, kybase, kzbase;
 
 #undef __FUNCT__ 
 #define __FUNCT__ "main" 
@@ -101,6 +104,9 @@ int main(int argc, char **argv)
   kzstep = kxstep;
   kxyzstep = (Nz==1)*kxstep*kystep + (Nz>1)*kxstep*kystep*kzstep;  
 
+ PetscOptionsGetReal(PETSC_NULL,"-kxbase",&kxbase,&flg);  MyCheckAndOutputDouble(flg,kxbase,"kxbase","kxbase");
+PetscOptionsGetReal(PETSC_NULL,"-kybase",&kybase,&flg);  MyCheckAndOutputDouble(flg,kybase,"kybase","kybase");
+PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(flg,kzbase,"kzbase","kzbase");
 
   /*--------------------------------------------------------*/
 
@@ -195,9 +201,11 @@ int main(int argc, char **argv)
   /*--------------------------------------------------------------*/
   /*----Now based on Command Line, Do the corresponding job----*/
   /*----------------------------------------------------------------*/
+ 
+  //int Job; set Job to be gloabl variables;
+  PetscOptionsGetInt(PETSC_NULL,"-Job",&Job,&flg);  MyCheckAndOutputInt(flg,Job,"Job","The Job indicator you set");
 
-  
-  int numofvar=Mxyz;
+  int numofvar=(Job==1)*Mxyz + (Job==3);
 
   /*--------   convert the epsopt array to epsSReal (if job!=optmization) --------*/      
   PetscOptionsGetInt(PETSC_NULL,"-maxeval",&maxeval,&flg);  MyCheckAndOutputInt(flg,maxeval,"maxeval","max number of evaluation");
@@ -207,8 +215,6 @@ int main(int argc, char **argv)
   PetscOptionsGetReal(PETSC_NULL,"-mylb",&mylb,&flg);  MyCheckAndOutputDouble(flg,mylb,"mylb","optimization lb");
   PetscOptionsGetReal(PETSC_NULL,"-myub",&myub,&flg);  MyCheckAndOutputDouble(flg,myub,"myub","optimization ub");
 
-      
- 
   lb = (double *) malloc(numofvar*sizeof(double));
   ub = (double *) malloc(numofvar*sizeof(double));
 
@@ -227,9 +233,20 @@ int main(int argc, char **argv)
     
   
   myfundataSolartype myfundata = {omega, epsopt};
-  nlopt_set_max_objective(opt, ResonatorSolverSolar, &myfundata);
-  result = nlopt_optimize(opt,epsopt,&maxf);
-  
+
+  if (Job==1)
+    {
+      nlopt_set_max_objective(opt, ResonatorSolverSolar, &myfundata);
+      result = nlopt_optimize(opt,epsopt,&maxf);
+    }
+  else if (Job==3)
+    {
+      varopt = (double *) malloc(numofvar*sizeof(double));
+      varopt[0] = omega;
+      nlopt_set_max_objective(opt, ldossolar, &myfundata);
+      result = nlopt_optimize(opt,varopt,&maxf);
+      free(varopt);
+    }
 
  
   /* print the optimization parameters */

@@ -1,5 +1,9 @@
 //define Global variables;
 
+//define macros;
+#undef PI
+#define PI 3.14159265358979e+00
+
 // from MoperatorGeneral.c
 PetscErrorCode MoperatorGeneral(MPI_Comm comm, Mat *Mout, int Nx, int Ny, int Nz, double hx, double hy, double hz, int bx[2], int by[2], int bz[2], double *muinv,int DimPeriod);
 
@@ -99,6 +103,8 @@ double ResonatorSolverPOLXY(int Mxyz,double *epsopt, double *grad, void *data);
 
 // from ResonatorSolverSolar.c
 double ResonatorSolverSolar(int Mxyz,double *epsopt, double *grad, void *data);
+// from ldossolar.c
+double ldossolar(int numofvar, double *epsopt, double *grad, void *data);
 
 // datatype used for optimization of dielectric structure;
 typedef struct { 

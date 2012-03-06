@@ -159,6 +159,8 @@ int SolarComputeKernel(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, double
   // constrcut M = curl \muinv curl - eps*omega^2 operator based on k;
   MoperatorGeneralBloch(MPI_COMM_WORLD, &M, Nx, Ny, Nz, hx, hy, hz, bx,by, bz, muinv, BCPeriod, blochbc, epsOmegasqr, epsOmegasqri);
 
+  OutputMat(PETSC_COMM_WORLD,M,filenameComm,"M.m");
+
   // I always use LU decompostion;
   PetscPrintf(PETSC_COMM_WORLD,"Same nonzero pattern, LU is redone! \n");
   ierr = KSPSetOperators(ksp,M,M,SAME_NONZERO_PATTERN);CHKERRQ(ierr); 

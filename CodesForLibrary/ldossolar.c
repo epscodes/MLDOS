@@ -13,6 +13,7 @@ extern Vec epspmlQ, epsmedium, vR, epscoef;
 extern Mat A, D;
 extern IS from, to;
 extern char filenameComm[PETSC_MAX_PATH_LEN];
+extern double kxbase, kybase, kzbase;
 
 #undef __FUNCT__ 
 #define __FUNCT__ "ldossolar"
@@ -49,7 +50,8 @@ PetscErrorCode ierr;
     for (j=0; j<nky; j++)
       for (k =0; k<nkz; k++)
 	{
-	  double blochbc[3]={i*kxstep,j*kystep,k*kzstep};
+	  double blochbc[3]={i*kxstep+kxbase*2*PI,j*kystep+kybase*2*PI,k*kzstep+kzbase*2*PI};
+	  PetscPrintf(PETSC_COMM_WORLD,"Compute value at k-points (%f,%f,%f) \n", blochbc[0], blochbc[1], blochbc[2]);
 	  double kldos;
 	  SolarComputeKernel(epsCurrent, epsOmegasqr, epsOmegasqri, blochbc, &kldos, NULL);
 	  ldos += kldos;
@@ -57,6 +59,8 @@ PetscErrorCode ierr;
 
   // take the average;
   ldos = ldos * kxyzstep;
+  PetscPrintf(PETSC_COMM_WORLD,"---The ldos at omega  %.16e  is %.16e  (step %d) \n", omega,ldos, count);
+
   PetscPrintf(PETSC_COMM_WORLD,"---The average ldos at step %d  (including all currents) is %.16e \n", count,ldos); 
   PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------- \n");
 
