@@ -2,6 +2,7 @@
 #include <time.h>
 #include "Resonator.h"
 
+
 extern int count;
 extern int its;
 extern int maxit;
@@ -18,6 +19,7 @@ extern Vec epspmlQ, epsmedium, vR, epscoef;
 extern Mat A, D;
 extern IS from, to;
 extern char filenameComm[PETSC_MAX_PATH_LEN];
+
 
 #undef __FUNCT__ 
 #define __FUNCT__ "ResonatorSolverSolar"
@@ -159,8 +161,8 @@ int SolarComputeKernel(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, double
   // constrcut M = curl \muinv curl - eps*omega^2 operator based on k;
   MoperatorGeneralBloch(MPI_COMM_WORLD, &M, Nx, Ny, Nz, hx, hy, hz, bx,by, bz, muinv, BCPeriod, blochbc, epsOmegasqr, epsOmegasqri);
 
-  OutputMat(PETSC_COMM_WORLD,M,filenameComm,"M.m");
-
+  SolarEigenvaluesSolver(M,epsCurrent, epspmlQ, D);
+  
   // I always use LU decompostion;
   PetscPrintf(PETSC_COMM_WORLD,"Same nonzero pattern, LU is redone! \n");
   ierr = KSPSetOperators(ksp,M,M,SAME_NONZERO_PATTERN);CHKERRQ(ierr); 
@@ -204,6 +206,8 @@ int SolarComputeKernel(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, double
       VecAssemblyEnd(tmp);
       VecDot(tmp,epsCurrent,&epsjloc); 
 
+      PetscPrintf(PETSC_COMM_WORLD,"---The epsjloc is %.16e \n", epsjloc);
+
       // maximize real(E*eps*J) = x*(epsSReal+1)*J; use J, not weightedJ;
       VecDot(x,J,&tldos);
       tldos = -1.0*epsjloc*tldos*hxyz;
@@ -215,30 +219,30 @@ int SolarComputeKernel(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, double
       /*-----------Now take care of gradients-------------*/
       /*------------------------------------------------*/
       if (kepsgrad != NULL)
-      {  
-	Vec tepsgrad;
-	ierr=VecDuplicate(J,&tepsgrad);CHKERRQ(ierr);
+	{  
+	  Vec tepsgrad;
+	  ierr=VecDuplicate(J,&tepsgrad);CHKERRQ(ierr);
 
-	/* Adjoint-Method tells us Mtran*lambba =J -> x = i*omega/weight*conj(lambda);  therefore the derivative is Re(x^2*weight*i*omega*(1+i/Qabs)*epspml) = Re(x^2*epscoef) ; here, I omit two minus signs: one is M'*lam= -j; the other is -Re(***). minus minus is a plus.*/
-	int aconj=0;	
-	CmpVecProd(x,epscoef,tmp,D,Nxyz,aconj,tmpa,tmpb);
-	CmpVecProd(x,tmp,tepsgrad,D,Nxyz,aconj,tmpa,tmpb);
-	// tepsgrad is the old derivate; new derivative = eps_center*tepsgrad + ldos_c;
-	// where ldos_c is a zero vector except at one postion = ldos;
-	VecScale(tepsgrad,epsjloc*hxyz);
+	  /* Adjoint-Method tells us Mtran*lambba =J -> x = i*omega/weight*conj(lambda);  therefore the derivative is Re(x^2*weight*i*omega*(1+i/Qabs)*epspml) = Re(x^2*epscoef) ; here, I omit two minus signs: one is M'*lam= -j; the other is -Re(***). minus minus is a plus.*/
+	  int aconj=0;	
+	  CmpVecProd(x,epscoef,tmp,D,3*Nxyz,aconj,tmpa,tmpb);
+	  CmpVecProd(x,tmp,tepsgrad,D,3*Nxyz,aconj,tmpa,tmpb);
+	  // tepsgrad is the old derivate; new derivative = eps_center*tepsgrad + ldos_c;
+	  // where ldos_c is a zero vector except at one postion = ldos;
+	  VecScale(tepsgrad,epsjloc*hxyz);
 
-	VecSet(tmp,0.0);
-	VecSetValue(tmp,JRandPos[i],1.0,INSERT_VALUES);
-	VecAssemblyBegin(tmp);
-	VecAssemblyEnd(tmp);
-	VecScale(tmp, tldos/epsjloc);
+	  VecSet(tmp,0.0);
+	  VecSetValue(tmp,JRandPos[i],1.0,INSERT_VALUES);
+	  VecAssemblyBegin(tmp);
+	  VecAssemblyEnd(tmp);
+	  VecScale(tmp, tldos/epsjloc);
  
-	VecAXPY(tepsgrad,1.0,tmp); // tepsgrad(i) = tepsgrad(i) + tldos/epsjloc;
-	VecAXPY(kepsgrad,1.0,tepsgrad); // epsgrad+=tepsgrad;
+	  VecAXPY(tepsgrad,1.0,tmp); // tepsgrad(i) = tepsgrad(i) + tldos/epsjloc;
+	  VecAXPY(kepsgrad,1.0,tepsgrad); // epsgrad+=tepsgrad;
 	 
-	ierr=VecDestroy(tepsgrad);CHKERRQ(ierr);
+	  ierr=VecDestroy(tepsgrad);CHKERRQ(ierr);
 		
-      }
+	}
 
     }
 
