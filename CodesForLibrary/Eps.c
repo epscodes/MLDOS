@@ -258,3 +258,55 @@ PetscErrorCode ModifyMatDiagonalsForOmega( Mat M, Mat A, Mat D, Vec epsSReal, Ve
  PetscFunctionReturn(0);
 }
 
+
+/* On March 9th, 2012, I created this myinterpTM2D matrix to handle the TM2D case */
+
+#undef __FUNCT__ 
+#define __FUNCT__ "myinterpTM2D"
+PetscErrorCode myinterpTM2D(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nxo, int Nyo, int Mx, int My)
+{
+  Mat ATM2D;
+  int nz = 1; /* max # nonzero elements in each row */
+  PetscErrorCode ierr;
+  int ns, ne;
+  double shift =  0.5;
+  int i;
+
+  int Mxy=Mx*My; 
+ 
+  ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE,
+			 Nx*Ny*2, Mxy,
+			 nz, NULL, nz, NULL, &ATM2D); CHKERRQ(ierr);
+     
+  ierr = MatGetOwnershipRange(ATM2D, &ns, &ne); CHKERRQ(ierr);
+
+  for (i = ns; i < ne; ++i) {
+    int ix, iy;
+    double xd,yd; /* (ix,iy,iz) location in d coordinates */
+    int ixd,iyd; /* rounded (xd,yd,zd) */
+    int j, id;
+
+    int ic=2; // always in z direction;
+   
+    iy = (j=i) % Ny;
+    ix = (j /= Ny) % Nx;
+ 
+    xd = (ix-Nxo) + (ic!= 0)*shift;
+    ixd = ceil(xd-0.5);
+    if (ixd < 0 || ixd >= Mx) continue;
+   
+    yd = (iy-Nyo) + (ic!= 1)*shift;
+    iyd = ceil(yd - 0.5);
+    if (iyd < 0 || iyd >= My) continue;
+  
+    id = (ixd*My + iyd);
+    ierr = MatSetValue(ATM2D, i, id, 1.0, INSERT_VALUES); CHKERRQ(ierr);
+  }
+
+  ierr = MatAssemblyBegin(ATM2D, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+  ierr = MatAssemblyEnd(ATM2D, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+
+  ierr = PetscObjectSetName((PetscObject) ATM2D, "TM2DInterpMatrix"); CHKERRQ(ierr);
+  *Aout = ATM2D;
+  PetscFunctionReturn(0);
+}
