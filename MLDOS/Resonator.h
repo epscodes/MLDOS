@@ -46,6 +46,7 @@ PetscErrorCode  myinterp(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, int N
 
 //PetscErrorCode General_interp(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, double hx, double hy, double hz, double x0, double y0, double z0, double x1, double y1, double z1, int Mx, int My, int Mz);
 
+PetscErrorCode myinterpTM2D(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nxo, int Nyo, int Mx, int My);
 
 // from MathTools.c
 PetscErrorCode  CmpVecProd(Vec va, Vec vb, Vec vout, Mat D, int Nxyz, int aconj, Vec vai, Vec vbi);
@@ -65,6 +66,10 @@ PetscErrorCode  ArrayToVec(double *pt, Vec V);
 PetscErrorCode VecToArray(Vec V, double *pt, VecScatter scatter, IS from, IS to, Vec Vlocal, int Mxyz);
 
 PetscErrorCode AddMuAbsorption(double *muinv, Vec muinvpml, double Qabs, int Nxyz, int add);
+
+PetscErrorCode TMprojmat(MPI_Comm comm, Mat *TMout, int Nxyz);
+
+PetscErrorCode MatSetTwoDiagonals(Mat M, Vec epsC, Mat D, double sign);
 
 // from Output.c
 PetscErrorCode  OutputVec(MPI_Comm comm, Vec x, const char *filenameComm, const char *filenameProperty);
@@ -105,6 +110,17 @@ double ResonatorSolverPOLXY(int Mxyz,double *epsopt, double *grad, void *data);
 double ResonatorSolverSolar(int Mxyz,double *epsopt, double *grad, void *data);
 // from ldossolar.c
 double ldossolar(int numofvar, double *epsopt, double *grad, void *data);
+
+// from SolarEgienvaluesSolver.c
+int SolarEigenvaluesSolver(Mat M, Vec epsCurrent, Vec epspmlQ, Mat D);
+
+// from MoperatorGeneralBloch2D.c
+int MoperatorGeneralBloch2D(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, double hx, double hy, double hz, int bx[2], int by[2], int bz[2], double *muinv, int DimPeriod, double blochbc[3], Vec epsOmegasqr, Vec epsOmegasqri);
+
+// from ResonatorSolverSolar2D.c
+double ResonatorSolverSolar2D(int Mxyz,double *epsopt, double *grad, void *data);
+
+int SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, double blochbc[3], double *ptkldos, Vec kepsgrad);
 
 // datatype used for optimization of dielectric structure;
 typedef struct { 

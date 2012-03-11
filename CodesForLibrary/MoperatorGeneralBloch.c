@@ -196,11 +196,10 @@ PetscErrorCode MoperatorGeneralBloch(MPI_Comm comm, Mat *Aout, int Nx, int Ny, i
       c2 = +creal( (muinvcp2cmp + muinvcp2lcmp) * magicnum)/hh;
       c3 = -creal(cp1idl_phase * muinvcp2lcmp * magicnum)/hh;
      
-
+      
       ierr = MatSetValue(A,i, i + cp1idu + jrd , c1, ADD_VALUES); CHKERRQ(ierr);
       ierr = MatSetValue(A,i, i + jrd , c2, ADD_VALUES); CHKERRQ(ierr);
       ierr = MatSetValue(A,i, i - cp1idl + jrd , c3, ADD_VALUES); CHKERRQ(ierr);
-
 
       /* d/dz muinv d/dx Ez */
       
@@ -290,7 +289,7 @@ PetscErrorCode MoperatorGeneralBloch(MPI_Comm comm, Mat *Aout, int Nx, int Ny, i
       ierr = MatSetValue(A,i, i + cp2idu + jrd, c1, ADD_VALUES); CHKERRQ(ierr);
       ierr = MatSetValue(A,i, i + jrd, c2, ADD_VALUES); CHKERRQ(ierr);
       ierr = MatSetValue(A,i, i - cp2idl + jrd, c3, ADD_VALUES); CHKERRQ(ierr);
-   
+
       /*---add tiny number to diagonals to keep nonzero positions on diagonal for future---*/
       if (flg && (jrd!=0))      
 	ierr=MatSetValue(A,i,i+jrd,1e-125,ADD_VALUES);CHKERRQ(ierr);

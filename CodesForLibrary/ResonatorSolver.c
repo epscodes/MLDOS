@@ -51,8 +51,7 @@ double ResonatorSolver(int Mxyz,double *epsopt, double *grad, void *data)
 
   // Update the diagonals of M Matrix;
   ModifyMatDiagonals(M, A,D, epsSReal, epspmlQ, epsmedium, epsC, epsCi, epsP, Nxyz,omega);
-   
-
+  
   
   #if 1
   //clock_t tstart, tend;  int tpast; tstart=clock();  
