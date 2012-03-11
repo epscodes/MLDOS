@@ -164,8 +164,8 @@ double ResonatorSolver(int Mxyz,double *epsopt, double *grad, void *data)
 #if 1
    /* Adjoint-Method tells us Mtran*lambba =J -> x = i*omega/weight*conj(lambda);  therefore the derivative is Re(x^2*weight*i*omega*(1+i/Qabs)*epspml) = Re(x^2*epscoef) ; here, I omit two minus signs: one is M'*lam= -j; the other is -Re(***). minus minus is a plus.*/
    int aconj=0;
-   CmpVecProd(x,epscoef,tmp,D,Nxyz,aconj,tmpa,tmpb);
-   CmpVecProd(x,tmp,epsgrad,D,Nxyz,aconj,tmpa,tmpb);   
+   CmpVecProd(x,epscoef,tmp,D,3*Nxyz,aconj,tmpa,tmpb);
+   CmpVecProd(x,tmp,epsgrad,D,3*Nxyz,aconj,tmpa,tmpb);   
    VecScale(epsgrad,hxyz); // the factor hxyz handle both 2D and 3D;
 #endif
 
@@ -178,8 +178,8 @@ double ResonatorSolver(int Mxyz,double *epsopt, double *grad, void *data)
    ierr = KSPGetIterationNumber(ksp,&its2);CHKERRQ(ierr);
    ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations for Adjoint equation is %D----\n ",its2);CHKERRQ(ierr);
    int aconj=0;
-   CmpVecProd(cglambda,epspmlQ,tmp,D,Nxyz,aconj,tmpa,tmpb);
-   CmpVecProd(x,tmp,epsgrad,D,Nxyz,aconj,tmpa,tmpb); 
+   CmpVecProd(cglambda,epspmlQ,tmp,D,3*Nxyz,aconj,tmpa,tmpb);
+   CmpVecProd(x,tmp,epsgrad,D,3*Nxyz,aconj,tmpa,tmpb); 
    VecScale(epsgrad,-pow(omega,2)*hx*hy); // the minus sign is because the quation we are solving is M z = -weightedJ; // the factor hx*hy is from 2D intergartion;
 #endif
 
