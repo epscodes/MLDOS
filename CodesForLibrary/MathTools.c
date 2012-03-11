@@ -5,7 +5,7 @@
 
 #undef __FUNCT__ 
 #define __FUNCT__ "CmpVecProd"
-PetscErrorCode CmpVecProd(Vec va, Vec vb, Vec vout, Mat D, int Nxyz, int aconj, Vec vai, Vec vbi)
+PetscErrorCode CmpVecProd(Vec va, Vec vb, Vec vout, Mat D, int N, int aconj, Vec vai, Vec vbi)
 {
   PetscErrorCode ierr;
 
@@ -28,7 +28,7 @@ PetscErrorCode CmpVecProd(Vec va, Vec vb, Vec vout, Mat D, int Nxyz, int aconj, 
   
   for (i=0; i<nlocal; i++)
     {  
-      if(i<(3*Nxyz-ns))
+      if(i<(N-ns)) // N is half of the total length of Vec;
 	out[i] = a[i]*b[i] - sign*ai[i]*bi[i];
       else
 	out[i] = ai[i]*b[i] + sign*a[i]*bi[i];
@@ -46,7 +46,7 @@ PetscErrorCode CmpVecProd(Vec va, Vec vb, Vec vout, Mat D, int Nxyz, int aconj, 
 
 #undef __FUNCT__ 
 #define __FUNCT__ "ImagIMat"
-PetscErrorCode ImagIMat(MPI_Comm comm, Mat *Dout, int Nxyz)
+PetscErrorCode ImagIMat(MPI_Comm comm, Mat *Dout, int N)
 {
   Mat D;
   int nz = 1; /* max # nonzero elements in each row */
@@ -54,13 +54,13 @@ PetscErrorCode ImagIMat(MPI_Comm comm, Mat *Dout, int Nxyz)
   int ns, ne;  
   int i;
      
-  ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, 6*Nxyz,6*Nxyz,nz, NULL, nz, NULL, &D); CHKERRQ(ierr);
+  ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, 2*N,2*N,nz, NULL, nz, NULL, &D); CHKERRQ(ierr);
       
   ierr = MatGetOwnershipRange(D, &ns, &ne); CHKERRQ(ierr);
 
   for (i = ns; i < ne; ++i) {
-    int id = (i+3*Nxyz)%(6*Nxyz);
-    double sign = pow(-1.0, (i<3*Nxyz));
+    int id = (i+N)%(2*N);
+    double sign = pow(-1.0, (i<N));
     ierr = MatSetValue(D, i, id, sign, INSERT_VALUES); CHKERRQ(ierr);
   }
 
@@ -176,7 +176,7 @@ PetscErrorCode GetMediumVec(Vec epsmedium,int Nz, int Mz, double epsair, double 
 
 #undef __FUNCT__ 
 #define __FUNCT__ "GetRealPartVec"
-PetscErrorCode GetRealPartVec(Vec vR, int Nxyz)
+PetscErrorCode GetRealPartVec(Vec vR, int N)
 {
    PetscErrorCode ierr;
    int i, ns, ne;
@@ -185,7 +185,7 @@ PetscErrorCode GetRealPartVec(Vec vR, int Nxyz)
 
    for(i=ns; i<ne; i++)
      {
-       if (i<3*Nxyz)
+       if (i<N)
 	 VecSetValue(vR,i,1.0,INSERT_VALUES);
        else
 	 VecSetValue(vR,i,0.0,INSERT_VALUES);
@@ -260,5 +260,86 @@ PetscErrorCode AddMuAbsorption(double *muinv, Vec muinvpml, double Qabs, int Nxy
       muinv[i+3*Nxyz]=(b-a*Qinv)/d;
     }
   ierr=VecRestoreArray(muinvpml,&ptmuinvpml);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+#undef _FUNCT_
+#define _FUNCT_ "TMprojmat"
+PetscErrorCode TMprojmat(MPI_Comm comm, Mat *TMout, int Nxyz)
+{
+  Mat TM;
+  int nnz = 1;
+  PetscErrorCode ierr;
+  int i, ns, ne;
+  ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, 2*Nxyz, 6*Nxyz, nnz, NULL, nnz, NULL, &TM); CHKERRQ(ierr);
+
+  ierr = MatGetOwnershipRange(TM, &ns, &ne); CHKERRQ(ierr);
+
+  int id;
+  for(i=ns; i<ne; i++)
+    {
+      id = (ns<Nxyz)*(i+2*Nxyz) + (ns>=Nxyz)*(i+4*Nxyz);//note "4", not "5"
+      ierr = MatSetValue(TM, i, id, 1.0, INSERT_VALUES); CHKERRQ(ierr);
+    }
+
+  ierr = MatAssemblyBegin(TM, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+  ierr = MatAssemblyEnd(TM, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+  
+  ierr = PetscObjectSetName((PetscObject) TM, "TMmatrix"); CHKERRQ(ierr);
+
+  *TMout = TM;
+  PetscFunctionReturn(0);
+}
+
+
+#undef _FUNCT_
+#define _FUNCT_ "MatSetTwoDiagonals"
+/* [M(1,1) + sign*epsC(1), M(1,2) - sign*epsC(2);
+   M(2,1) + sign*epsC(2), M(2,2) + sign*epsC(1);] */
+PetscErrorCode MatSetTwoDiagonals(Mat M, Vec epsC, Mat D, double sign)
+{
+  PetscErrorCode ierr;
+  
+  Vec epsCi;
+  ierr=VecDuplicate(epsC, &epsCi); CHKERRQ(ierr);
+  ierr=MatMult(D,epsC,epsCi); CHKERRQ(ierr);
+  
+  int N;
+  ierr=VecGetSize(epsC,&N); CHKERRQ(ierr);
+    
+  int i, ns, ne;
+  MatGetOwnershipRange(M, &ns, &ne); CHKERRQ(ierr);
+
+  double *c, *ci;
+  ierr = VecGetArray(epsC, &c); CHKERRQ(ierr);  
+  ierr = VecGetArray(epsCi, &ci); CHKERRQ(ierr);
+
+  double vr, vi;
+  
+  for (i = ns; i < ne; ++i) 
+    {
+      if(i<N/2)
+	{ vr = c[i-ns];  // here vr is real;
+	  vi = ci[i-ns]; // here vi is -imag; happen to be correct combination;
+	}
+      else
+	{ vr = ci[i-ns]; // here vr is real;
+	  vi = c[i-ns];  // here vr is imag;
+	}
+      
+      //M = M + sign*epsC
+      ierr = MatSetValue(M,i,i,sign*vr,ADD_VALUES);CHKERRQ(ierr);
+      ierr = MatSetValue(M,i,(i+N/2)%N,sign*vi,ADD_VALUES);CHKERRQ(ierr);
+    }
+  
+  ierr = MatAssemblyBegin(M, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+  ierr = MatAssemblyEnd(M, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+  
+  ierr = VecRestoreArray(epsC, &c); CHKERRQ(ierr);
+  ierr = VecRestoreArray(epsCi, &ci); CHKERRQ(ierr);
+  
+ /* Destroy Vectors */
+  ierr=VecDestroy(epsCi); CHKERRQ(ierr);
+  
   PetscFunctionReturn(0);
 }
