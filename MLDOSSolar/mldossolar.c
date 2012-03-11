@@ -3,6 +3,8 @@
 #include <string.h>
 #include <nlopt.h>
 #include "Resonator.h"
+#include <slepc.h>
+#include <slepceps.h>
 
 int count=1;
 int its=100;
@@ -25,12 +27,16 @@ IS from, to;
 char filenameComm[PETSC_MAX_PATH_LEN];
 double kxbase, kybase, kzbase;
 
+Mat TMSixToTwo, D2D;
+Vec epspmlQ2D, epsmedium2D, vR2D, epscoef2D;
+int TMID;
+
 #undef __FUNCT__ 
 #define __FUNCT__ "main" 
 int main(int argc, char **argv)
 {
   /* -------Initialize and Get the parameters from command line ------*/
-  PetscInitialize(&argc, &argv, PETSC_NULL, PETSC_NULL);
+  SlepcInitialize(&argc, &argv, PETSC_NULL, PETSC_NULL);
   PetscPrintf(PETSC_COMM_WORLD,"--------Initializing------ \n");
   PetscErrorCode ierr;
   PetscTruth flg;
@@ -108,16 +114,32 @@ int main(int argc, char **argv)
 PetscOptionsGetReal(PETSC_NULL,"-kybase",&kybase,&flg);  MyCheckAndOutputDouble(flg,kybase,"kybase","kybase");
 PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(flg,kzbase,"kzbase","kzbase");
 
+ PetscOptionsGetInt(PETSC_NULL,"-TMID",&TMID,&flg);  MyCheckAndOutputInt(flg,TMID,"TMID","TMID");
+
   /*--------------------------------------------------------*/
 
 
   /*---------- Set the current source---------*/
   //ImaginaryIMatrix;
-  ImagIMat(PETSC_COMM_WORLD, &D,Nxyz);
+  ImagIMat(PETSC_COMM_WORLD, &D,3*Nxyz);
 
   /*-------Get the weight vector ------------------*/
   Vec weight;
-  ierr = VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, 6*Nxyz, &weight);CHKERRQ(ierr);
+
+  if (TMID==1)
+    {       
+      TMprojmat(PETSC_COMM_WORLD, &TMSixToTwo, Nxyz);
+      ierr=MatGetVecs(TMSixToTwo,&weight,&epspmlQ2D); CHKERRQ(ierr);
+      ierr=VecDuplicate(epspmlQ2D, &epsmedium2D); CHKERRQ(ierr);
+      ierr=VecDuplicate(epspmlQ2D, &vR2D); CHKERRQ(ierr);
+      ierr=VecDuplicate(epspmlQ2D, &epscoef2D); CHKERRQ(ierr);
+      ImagIMat(PETSC_COMM_WORLD, &D2D, Nxyz);
+    }
+  else
+    { ierr = VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, 6*Nxyz, &weight);CHKERRQ(ierr); }
+
+ 
+
   if(LowerPML==0)
     GetWeightVec(weight, Nx, Ny,Nz); // new code handles both 3D and 2D;
   else
@@ -125,7 +147,7 @@ PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(
 
 
   ierr = VecDuplicate(weight,&vR); CHKERRQ(ierr);
-  GetRealPartVec(vR, Nxyz);
+  GetRealPartVec(vR, 3*Nxyz);
 
   /*----------- Define PML muinv vectors  */
  
@@ -149,13 +171,26 @@ PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(
   // compute epspmlQ,epscoef;
   EpsCombine(D, weight, epspml, epspmlQ, epscoef, Qabs, omega);
 
-  /*--------- Setup the interp matrix -------------------*/  
-  //new routine for myinterp;
-  myinterp(PETSC_COMM_WORLD, &A, Nx,Ny,Nz, LowerPML*Npmlx,LowerPML*Npmly,LowerPML*Npmlz, Mx,My,Mz,Mzslab); // LoweerPML*Npmlx,..,.., specify where the interp starts;    
-
   /*---------Setup the epsmedium vector----------------*/
   ierr = VecDuplicate(weight,&epsmedium); CHKERRQ(ierr);
   GetMediumVec(epsmedium,Nz,Mz,epsair,epssub);
+
+
+  if (TMID==1)
+    {
+      ierr=MatMult(TMSixToTwo,epsmedium,epsmedium2D); CHKERRQ(ierr);
+      ierr=MatMult(TMSixToTwo,epspmlQ,epspmlQ2D); CHKERRQ(ierr);
+      ierr=MatMult(TMSixToTwo,epscoef,epscoef2D); CHKERRQ(ierr);
+      ierr=MatMult(TMSixToTwo,vR,vR2D);CHKERRQ(ierr);
+     }
+
+
+  /*--------- Setup the interp matrix -------------------*/  
+  //new routine for myinterp;
+  if (TMID==1)
+    myinterpTM2D(PETSC_COMM_WORLD, &A, Nx,Ny,LowerPML*Npmlx,LowerPML*Npmly, Mx,My);
+  else
+    myinterp(PETSC_COMM_WORLD, &A, Nx,Ny,Nz, LowerPML*Npmlx,LowerPML*Npmly,LowerPML*Npmlz, Mx,My,Mz,Mzslab); // LoweerPML*Npmlx,..,.., specify where the interp starts;    
  
   /*---------Create scatter used in the solver-------------*/
  
@@ -236,7 +271,10 @@ PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(
 
   if (Job==1)
     {
-      nlopt_set_max_objective(opt, ResonatorSolverSolar, &myfundata);
+      if (TMID==1)
+	nlopt_set_max_objective(opt, ResonatorSolverSolar2D, &myfundata);
+      else
+	nlopt_set_max_objective(opt, ResonatorSolverSolar, &myfundata);
       result = nlopt_optimize(opt,epsopt,&maxf);
     }
   else if (Job==3)
@@ -309,6 +347,16 @@ PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(
   ISDestroy(from);
   ISDestroy(to);
  
+  if (TMID==1)
+    {
+      ierr = VecDestroy(vR2D); CHKERRQ(ierr);
+      ierr = VecDestroy(epspmlQ2D); CHKERRQ(ierr);
+      ierr = VecDestroy(epscoef2D); CHKERRQ(ierr);
+      ierr = VecDestroy(epsmedium2D); CHKERRQ(ierr);
+      ierr = MatDestroy(D2D); CHKERRQ(ierr);
+    }
+
+
 
   /*------------ finalize the program -------------*/
 
@@ -319,7 +367,7 @@ PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(
     MPI_Barrier(PETSC_COMM_WORLD);
   }
   
-  ierr = PetscFinalize(); CHKERRQ(ierr);
+  ierr = SlepcFinalize(); CHKERRQ(ierr);
 
   return 0;
 }
