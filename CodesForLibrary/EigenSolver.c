@@ -93,7 +93,7 @@ PetscErrorCode EigenSolver(void *data, int Linear, int Eig, int maxeigit)
 	  else
 	    { ierr = KSPSetOperators(ksp,M,M,SAME_NONZERO_PATTERN); CHKERRQ(ierr);}	  
 	  VecAYPX(epsC,0.0,b); // copy b to epsC;
-	  CmpVecProd(diagB,epsC,b,D,Nxyz,aconj,tmpa,tmpb); // b=B*b;
+	  CmpVecProd(diagB,epsC,b,D,aconj,tmpa,tmpb); // b=B*b;
 	  ierr = KSPSolve(ksp,b,x);CHKERRQ(ierr);
 	  ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
 	  ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations in this step is %D----\n ",its);CHKERRQ(ierr);
@@ -162,7 +162,7 @@ PetscErrorCode RayleighQuotient(Mat M, Vec diagB, Vec x, Vec b, Vec vR, Mat D, V
   VecScale(x,1.0/normx);
 
   ierr = MatMult(M, x, Ax); CHKERRQ(ierr);  // compute Ax
-  CmpVecProd(diagB,x,Bx,D,Nxyz, aconj,tmpa,tmpb); // compute Bx
+  CmpVecProd(diagB,x,Bx,D,aconj,tmpa,tmpb); // compute Bx
 
 
   ierr=VecPointwiseMult(Rex, vR, x); CHKERRQ(ierr);
