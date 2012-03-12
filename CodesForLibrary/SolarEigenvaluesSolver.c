@@ -41,13 +41,28 @@ int SolarEigenvaluesSolver(Mat M, Vec epsCurrent, Vec epspmlQ, Mat D)
       VecDestroy(epsC);
     }
 
+
   PetscPrintf(PETSC_COMM_WORLD,"!!!---computing eigenvalues---!!! \n");
   ierr=EPSCreate(PETSC_COMM_WORLD, &eps); CHKERRQ(ierr);
   ierr=EPSSetOperators(eps, M, B); CHKERRQ(ierr);
   //ierr=EPSSetProblemType(eps,EPS_PGNHEP);CHKERRQ(ierr);
   EPSSetFromOptions(eps);
+
+  PetscLogDouble t1, t2, tpast;
+  ierr = PetscGetTime(&t1);CHKERRQ(ierr);
+
   ierr=EPSSolve(eps); CHKERRQ(ierr);
   EPSGetConverged(eps, &nconv); CHKERRQ(ierr);
+  
+  {
+    ierr = PetscGetTime(&t2);CHKERRQ(ierr);
+    tpast = t2 - t1;
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if(rank==0)
+      PetscPrintf(PETSC_COMM_SELF,"---The eigensolver time is %f s \n",tpast);
+  }  
+
   ierr = PetscPrintf(PETSC_COMM_WORLD,"Number of converged eigenpairs: %d\n\n",nconv);CHKERRQ(ierr);
 
 
