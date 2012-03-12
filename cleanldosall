@@ -10,18 +10,23 @@ export NloptLibPath=/usr/local/lib
 
 cd CodesForLibrary
 make clean
+rm *.a
 
 cd ../MLDOS/
 make clean
+rm *.h
 
 cd ../MLDOSRHS/
 make clean
+rm *.h
 
 cd ../MLDOSPOLXY/
 make clean
+rm *.h
 
 cd ../MLDOSSolar/
 make clean
+rm *.[oh]
 
 #cd ../AnalyzeStructure make clean
 
