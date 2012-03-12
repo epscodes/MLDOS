@@ -23,8 +23,8 @@ extern char filenameComm[PETSC_MAX_PATH_LEN];
 
 extern Mat D2D, TMSixToTwo;
 extern Vec epspmlQ2D, epsmedium2D, vR2D, epscoef2D;
-
 extern double kxbase, kybase, kzbase;
+extern int NeedEig;
 
 #undef __FUNCT__ 
 #define __FUNCT__ "ResonatorSolverSolar2D"
@@ -166,7 +166,8 @@ int SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, doub
   // constrcut M = curl \muinv curl - eps*omega^2 operator based on k;
   MoperatorGeneralBloch2D(MPI_COMM_WORLD, &M, Nx, Ny, Nz, hx, hy, hz, bx,by, bz, muinv, BCPeriod, blochbc, epsOmegasqr, epsOmegasqri);
 
-  SolarEigenvaluesSolver(M,epsCurrent, epspmlQ2D, D2D);
+  if (NeedEig==1)
+    SolarEigenvaluesSolver(M,epsCurrent, epspmlQ2D, D2D);
   
   // I always use LU decompostion;
   PetscPrintf(PETSC_COMM_WORLD,"Same nonzero pattern, LU is redone! \n");

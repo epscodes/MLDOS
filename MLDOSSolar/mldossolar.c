@@ -30,6 +30,7 @@ double kxbase, kybase, kzbase;
 Mat TMSixToTwo, D2D;
 Vec epspmlQ2D, epsmedium2D, vR2D, epscoef2D;
 int TMID;
+int NeedEig;
 
 #undef __FUNCT__ 
 #define __FUNCT__ "main" 
@@ -115,6 +116,7 @@ PetscOptionsGetReal(PETSC_NULL,"-kybase",&kybase,&flg);  MyCheckAndOutputDouble(
 PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(flg,kzbase,"kzbase","kzbase");
 
  PetscOptionsGetInt(PETSC_NULL,"-TMID",&TMID,&flg);  MyCheckAndOutputInt(flg,TMID,"TMID","TMID");
+ PetscOptionsGetInt(PETSC_NULL,"-NeedEig",&NeedEig,&flg);  MyCheckAndOutputInt(flg,NeedEig,"NeedEig","NeedEig");
 
   /*--------------------------------------------------------*/
 
