@@ -5,9 +5,12 @@
 
 #undef __FUNCT__ 
 #define __FUNCT__ "CmpVecProd"
-PetscErrorCode CmpVecProd(Vec va, Vec vb, Vec vout, Mat D, int N, int aconj, Vec vai, Vec vbi)
+PetscErrorCode CmpVecProd(Vec va, Vec vb, Vec vout, Mat D, int aconj, Vec vai, Vec vbi)
 {
   PetscErrorCode ierr;
+
+  int N; // total length;
+  ierr=VecGetSize(va, &N); CHKERRQ(ierr);
 
   ierr=MatMult(D,va,vai);CHKERRQ(ierr);
   ierr=MatMult(D,vb,vbi);CHKERRQ(ierr);
@@ -28,7 +31,7 @@ PetscErrorCode CmpVecProd(Vec va, Vec vb, Vec vout, Mat D, int N, int aconj, Vec
   
   for (i=0; i<nlocal; i++)
     {  
-      if(i<(N-ns)) // N is half of the total length of Vec;
+      if(i<(N/2-ns)) // N is the total length of Vec;
 	out[i] = a[i]*b[i] - sign*ai[i]*bi[i];
       else
 	out[i] = ai[i]*b[i] + sign*a[i]*bi[i];
@@ -54,13 +57,13 @@ PetscErrorCode ImagIMat(MPI_Comm comm, Mat *Dout, int N)
   int ns, ne;  
   int i;
      
-  ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, 2*N,2*N,nz, NULL, nz, NULL, &D); CHKERRQ(ierr);
+  ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, N,N,nz, NULL, nz, NULL, &D); CHKERRQ(ierr); // here N is total length;
       
   ierr = MatGetOwnershipRange(D, &ns, &ne); CHKERRQ(ierr);
 
   for (i = ns; i < ne; ++i) {
-    int id = (i+N)%(2*N);
-    double sign = pow(-1.0, (i<N));
+    int id = (i+N/2)%(N);
+    double sign = pow(-1.0, (i<N/2));
     ierr = MatSetValue(D, i, id, sign, INSERT_VALUES); CHKERRQ(ierr);
   }
 
@@ -77,7 +80,7 @@ PetscErrorCode ImagIMat(MPI_Comm comm, Mat *Dout, int N)
 
 #undef __FUNCT__ 
 #define __FUNCT__ "CongMat"
-PetscErrorCode CongMat(MPI_Comm comm, Mat *Cout, int Nxyz)
+PetscErrorCode CongMat(MPI_Comm comm, Mat *Cout, int N)
 {
   Mat C;
   int nz = 1; /* max # nonzero elements in each row */
@@ -85,12 +88,12 @@ PetscErrorCode CongMat(MPI_Comm comm, Mat *Cout, int Nxyz)
   int ns, ne;  
   int i;
      
-  ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, 6*Nxyz,6*Nxyz,nz, NULL, nz, NULL, &C); CHKERRQ(ierr);
+  ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, N,N,nz, NULL, nz, NULL, &C); CHKERRQ(ierr);
      
   ierr = MatGetOwnershipRange(C, &ns, &ne); CHKERRQ(ierr);
 
   for (i = ns; i < ne; ++i) {
-    double sign = pow(-1.0, (i>(3*Nxyz-1)));
+    double sign = pow(-1.0, (i>(N/2-1)));
     ierr = MatSetValue(C, i, i, sign, INSERT_VALUES); CHKERRQ(ierr);
   }
 
@@ -185,7 +188,7 @@ PetscErrorCode GetRealPartVec(Vec vR, int N)
 
    for(i=ns; i<ne; i++)
      {
-       if (i<N)
+       if (i<N/2)
 	 VecSetValue(vR,i,1.0,INSERT_VALUES);
        else
 	 VecSetValue(vR,i,0.0,INSERT_VALUES);
@@ -242,22 +245,26 @@ PetscErrorCode VecToArray(Vec V, double *pt, VecScatter scatter, IS from, IS to,
 
 #undef __FUNCT__ 
 #define __FUNCT__ "AddMuAbsorption"
-PetscErrorCode AddMuAbsorption(double *muinv, Vec muinvpml, double Qabs, int Nxyz, int add)
+PetscErrorCode AddMuAbsorption(double *muinv, Vec muinvpml, double Qabs, int add)
 {
   //compute muinvpml/(1+i/Qabs)
   double Qinv = (add==0) ? 0.0: (1.0/Qabs);
   double d=1 + pow(Qinv,2);
   PetscErrorCode ierr;
+  int N;
+  ierr=VecGetSize(muinvpml,&N);CHKERRQ(ierr);
+
   double *ptmuinvpml;
   ierr=VecGetArray(muinvpml, &ptmuinvpml);CHKERRQ(ierr);
+
   int i;
   double a,b;
-  for(i=0;i<3*Nxyz;i++)
+  for(i=0;i<N/2;i++)
     {
       a=ptmuinvpml[i];
-      b=ptmuinvpml[i+3*Nxyz];      
+      b=ptmuinvpml[i+N/2];      
       muinv[i]= (a+b*Qinv)/d;
-      muinv[i+3*Nxyz]=(b-a*Qinv)/d;
+      muinv[i+N/2]=(b-a*Qinv)/d;
     }
   ierr=VecRestoreArray(muinvpml,&ptmuinvpml);CHKERRQ(ierr);
   PetscFunctionReturn(0);

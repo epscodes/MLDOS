@@ -108,7 +108,7 @@ int main(int argc, char **argv)
 
   /*---------- Set the current source---------*/
   Mat D; //ImaginaryIMatrix;
-  ImagIMat(PETSC_COMM_WORLD, &D,3*Nxyz);
+  ImagIMat(PETSC_COMM_WORLD, &D,6*Nxyz);
 
   Vec J;
   ierr = VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, 6*Nxyz, &J);CHKERRQ(ierr);
@@ -145,7 +145,7 @@ int main(int argc, char **argv)
 
   Vec vR;
   ierr = VecDuplicate(J,&vR); CHKERRQ(ierr);
-  GetRealPartVec(vR, 3*Nxyz);
+  GetRealPartVec(vR, 6*Nxyz);
 
   /*----------- Define PML muinv vectors  */
  
@@ -155,7 +155,7 @@ int main(int argc, char **argv)
   double *muinv;
   muinv = (double *) malloc(sizeof(double)*6*Nxyz);
   int add=0;
-  AddMuAbsorption(muinv,muinvpml,Qabs,Nxyz,add);
+  AddMuAbsorption(muinv,muinvpml,Qabs,add);
   ierr = VecDestroy(muinvpml); CHKERRQ(ierr);  
 
   /*---------- Define PML eps vectors: epspml---------- */  

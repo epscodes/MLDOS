@@ -121,7 +121,7 @@ PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(
 
   /*---------- Set the current source---------*/
   //ImaginaryIMatrix;
-  ImagIMat(PETSC_COMM_WORLD, &D,3*Nxyz);
+  ImagIMat(PETSC_COMM_WORLD, &D,6*Nxyz);
 
   /*-------Get the weight vector ------------------*/
   Vec weight;
@@ -147,7 +147,7 @@ PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(
 
 
   ierr = VecDuplicate(weight,&vR); CHKERRQ(ierr);
-  GetRealPartVec(vR, 3*Nxyz);
+  GetRealPartVec(vR, 6*Nxyz);
 
   /*----------- Define PML muinv vectors  */
  
@@ -156,7 +156,7 @@ PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(
 
   muinv = (double *) malloc(sizeof(double)*6*Nxyz);
   int add=0;
-  AddMuAbsorption(muinv,muinvpml,Qabs,Nxyz,add);
+  AddMuAbsorption(muinv,muinvpml,Qabs,add);
   ierr = VecDestroy(muinvpml); CHKERRQ(ierr);  
 
   /*---------- Define PML eps vectors: epspml---------- */  

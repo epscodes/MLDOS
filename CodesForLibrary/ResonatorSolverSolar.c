@@ -225,8 +225,8 @@ int SolarComputeKernel(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, double
 
 	  /* Adjoint-Method tells us Mtran*lambba =J -> x = i*omega/weight*conj(lambda);  therefore the derivative is Re(x^2*weight*i*omega*(1+i/Qabs)*epspml) = Re(x^2*epscoef) ; here, I omit two minus signs: one is M'*lam= -j; the other is -Re(***). minus minus is a plus.*/
 	  int aconj=0;	
-	  CmpVecProd(x,epscoef,tmp,D,3*Nxyz,aconj,tmpa,tmpb);
-	  CmpVecProd(x,tmp,tepsgrad,D,3*Nxyz,aconj,tmpa,tmpb);
+	  CmpVecProd(x,epscoef,tmp,D,aconj,tmpa,tmpb);
+	  CmpVecProd(x,tmp,tepsgrad,D,aconj,tmpa,tmpb);
 	  // tepsgrad is the old derivate; new derivative = eps_center*tepsgrad + ldos_c;
 	  // where ldos_c is a zero vector except at one postion = ldos;
 	  VecScale(tepsgrad,epsjloc*hxyz);

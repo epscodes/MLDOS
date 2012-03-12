@@ -214,12 +214,12 @@ double ResonatorSolverPOLXY(int Mxyz,double *epsopt, double *grad, void *data)
    VecDuplicate(epsgrad,&epsgrady);
 
    int aconj=0;
-   CmpVecProd(solx,epscoef,tmp,D,Nxyz,aconj,tmpa,tmpb);
-   CmpVecProd(solx,tmp,epsgradx,D,Nxyz,aconj,tmpa,tmpb);   
+   CmpVecProd(solx,epscoef,tmp,D,aconj,tmpa,tmpb);
+   CmpVecProd(solx,tmp,epsgradx,D,aconj,tmpa,tmpb);   
    VecScale(epsgradx,hxyz); // the factor hxyz handle both 2D and 3D;
 
-   CmpVecProd(soly,epscoef,tmp,D,Nxyz,aconj,tmpa,tmpb);
-   CmpVecProd(soly,tmp,epsgrady,D,Nxyz,aconj,tmpa,tmpb);   
+   CmpVecProd(soly,epscoef,tmp,D,aconj,tmpa,tmpb);
+   CmpVecProd(soly,tmp,epsgrady,D,aconj,tmpa,tmpb);   
    VecScale(epsgrady,hxyz); // the factor hxyz handle both 2D and 3D;
 
    VecAXPBYPCZ(epsgrad,1.0,1.0,0.0,epsgradx,epsgrady);

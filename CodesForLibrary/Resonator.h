@@ -49,23 +49,23 @@ PetscErrorCode  myinterp(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, int N
 PetscErrorCode myinterpTM2D(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nxo, int Nyo, int Mx, int My);
 
 // from MathTools.c
-PetscErrorCode  CmpVecProd(Vec va, Vec vb, Vec vout, Mat D, int Nxyz, int aconj, Vec vai, Vec vbi);
+PetscErrorCode  CmpVecProd(Vec va, Vec vb, Vec vout, Mat D, int aconj, Vec vai, Vec vbi);
 
-PetscErrorCode  ImagIMat(MPI_Comm comm, Mat *Dout, int Nxyz);
+PetscErrorCode  ImagIMat(MPI_Comm comm, Mat *Dout, int N);
 
-PetscErrorCode   CongMat(MPI_Comm comm, Mat *Cout, int Nxyz);
+PetscErrorCode   CongMat(MPI_Comm comm, Mat *Cout, int N);
 
 PetscErrorCode   GetWeightVec(Vec weight,int Nx, int Ny, int Nz);
 
 PetscErrorCode GetMediumVec(Vec epsmedium, int Nz, int Mz, double epsair, double epssub);
 
-PetscErrorCode  GetRealPartVec(Vec vR, int Nxyz);
+PetscErrorCode  GetRealPartVec(Vec vR, int N);
 
 PetscErrorCode  ArrayToVec(double *pt, Vec V);
 
 PetscErrorCode VecToArray(Vec V, double *pt, VecScatter scatter, IS from, IS to, Vec Vlocal, int Mxyz);
 
-PetscErrorCode AddMuAbsorption(double *muinv, Vec muinvpml, double Qabs, int Nxyz, int add);
+PetscErrorCode AddMuAbsorption(double *muinv, Vec muinvpml, double Qabs, int add);
 
 PetscErrorCode TMprojmat(MPI_Comm comm, Mat *TMout, int Nxyz);
 

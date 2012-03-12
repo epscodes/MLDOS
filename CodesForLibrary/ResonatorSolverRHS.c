@@ -182,8 +182,8 @@ double ResonatorSolverRHS(int Mxyz,double *epsopt, double *grad, void *data)
 	  if (grad) {  
 	    /* Adjoint-Method tells us Mtran*lambba =J -> x = i*omega/weight*conj(lambda);  therefore the derivative is Re(x^2*weight*i*omega*(1+i/Qabs)*epspml) = Re(x^2*epscoef) ; here, I omit two minus signs: one is M'*lam= -j; the other is -Re(***). minus minus is a plus.*/
 	    int aconj=0;
-	    CmpVecProd(x,epscoef,tmp,D,Nxyz,aconj,tmpa,tmpb);
-	    CmpVecProd(x,tmp,tepsgrad,D,Nxyz,aconj,tmpa,tmpb);
+	    CmpVecProd(x,epscoef,tmp,D,aconj,tmpa,tmpb);
+	    CmpVecProd(x,tmp,tepsgrad,D,aconj,tmpa,tmpb);
 	    VecAXPY(epsgrad,hxyz,tepsgrad); // epsgrad+=tepsgrad average;//the factor hxyz handle both 2D and 3D;
 	  }
 
