@@ -24,6 +24,8 @@ extern char filenameComm[PETSC_MAX_PATH_LEN];
 extern Mat D2D, TMSixToTwo;
 extern Vec epspmlQ2D, epsmedium2D, vR2D, epscoef2D;
 
+extern double kxbase, kybase, kzbase;
+
 #undef __FUNCT__ 
 #define __FUNCT__ "ResonatorSolverSolar2D"
 double ResonatorSolverSolar2D(int Mxyz,double *epsopt, double *grad, void *data)
@@ -220,7 +222,7 @@ int SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, doub
       /*------------------------------------------------*/
       /*-----------Now take care of gradients-------------*/
       /*------------------------------------------------*/
-      if (kepsgrad != NULL)
+      if (kepsgrad != PETSC_NULL)
 	{  
 	  Vec tepsgrad;
 	  ierr=VecDuplicate(J,&tepsgrad);CHKERRQ(ierr);
@@ -279,10 +281,66 @@ int SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, doub
 }
 
 
+#undef __FUNCT__ 
+#define __FUNCT__ "ldossolar2D"
+double ldossolar2D(int Mxyz,double *varopt, double *grad, void *data)
+{
+  
+  PetscErrorCode ierr;
+  Vec epsSReal, epsCurrent; // create compatiable vectors with A.
+   ierr = MatGetVecs(A,&epsSReal, &epsCurrent); CHKERRQ(ierr);
+  ierr = PetscObjectSetName((PetscObject) epsSReal, "epsSReal");CHKERRQ(ierr);
+ 
+  // copy epsopt to epsSReal;
+  myfundataSolartype *ptmyfundata = (myfundataSolartype *)data;
+  ierr=ArrayToVec(ptmyfundata->Sptepsinput,epsSReal); CHKERRQ(ierr);
 
+   //epsCurrent is the current real epsilon everywhere; while epsC is calculated in ModifyMatDiagonals but with epsPML; here I need purely real epsilon;
+  ierr =MatMult(A, epsSReal,epsCurrent); CHKERRQ(ierr); 
+  ierr = VecAXPY(epsCurrent,1.0,epsmedium2D); CHKERRQ(ierr);
 
+  // Compute epsOmegasqr and epsOmegasqri;
+  omega = varopt[0]; // now omega is degree of freedom;
+  Vec epsOmegasqr, epsOmegasqri;
+  VecDuplicate(epsCurrent,&epsOmegasqr);
+  VecDuplicate(epsCurrent,&epsOmegasqri);
+  ierr = VecPointwiseMult(epsOmegasqr, epsCurrent,epspmlQ2D); CHKERRQ(ierr);
+  ierr = VecScale(epsOmegasqr, pow(omega,2)); CHKERRQ(ierr);
+  ierr = MatMult(D2D,epsOmegasqr,epsOmegasqri); CHKERRQ(ierr);
 
+  /*---------For each k, compute its ldos for all j------------------------*/
+  int i, j, k;
+  double ldos=0.0;
+  
+  for (i=0; i<nkx; i++)
+    for (j=0; j<nky; j++)
+      for (k =0; k<nkz; k++)
+	{
+	  double blochbc[3]={i*kxstep+kxbase*2*PI,j*kystep+kybase*2*PI,k*kzstep+kzbase*2*PI};
+	   PetscPrintf(PETSC_COMM_WORLD,"Compute value at k-points (%f,%f,%f) \n", blochbc[0], blochbc[1], blochbc[2]);
+	  double kldos;
+	  SolarComputeKernel2D(epsCurrent, epsOmegasqr, epsOmegasqri, blochbc, &kldos, PETSC_NULL);
+	  ldos += kldos;
+	}
 
+  // take the average;
+  ldos = ldos * kxyzstep;
+  PetscPrintf(PETSC_COMM_WORLD,"---The average ldos at omega  %.16e  is %.16e  (step %d) \n", omega,ldos, count);
+
+ if (grad)
+    {
+      PetscPrintf(PETSC_COMM_WORLD,"---Significantly wrong!!! Derivative is not provided! \n");
+    }
+
+  /*---Destroy Vectors *----*/
+  ierr=VecDestroy(epsSReal);CHKERRQ(ierr);
+  ierr=VecDestroy(epsOmegasqr);CHKERRQ(ierr);
+  ierr=VecDestroy(epsOmegasqri);CHKERRQ(ierr);
+  ierr=VecDestroy(epsCurrent);CHKERRQ(ierr); 
+ 
+  count++;
+  return ldos;
+}
 
 
 
