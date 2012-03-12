@@ -133,7 +133,7 @@ PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(
       ierr=VecDuplicate(epspmlQ2D, &epsmedium2D); CHKERRQ(ierr);
       ierr=VecDuplicate(epspmlQ2D, &vR2D); CHKERRQ(ierr);
       ierr=VecDuplicate(epspmlQ2D, &epscoef2D); CHKERRQ(ierr);
-      ImagIMat(PETSC_COMM_WORLD, &D2D, Nxyz);
+      ImagIMat(PETSC_COMM_WORLD, &D2D, 2*Nxyz);
     }
   else
     { ierr = VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, 6*Nxyz, &weight);CHKERRQ(ierr); }
@@ -281,7 +281,10 @@ PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(
     {
       varopt = (double *) malloc(numofvar*sizeof(double));
       varopt[0] = omega;
-      nlopt_set_max_objective(opt, ldossolar, &myfundata);
+      if (TMID==1)
+	nlopt_set_max_objective(opt, ldossolar2D, &myfundata);
+      else
+	nlopt_set_max_objective(opt, ldossolar, &myfundata);
       result = nlopt_optimize(opt,varopt,&maxf);
       free(varopt);
     }
