@@ -7,10 +7,6 @@
 // from MoperatorGeneral.c
 PetscErrorCode MoperatorGeneral(MPI_Comm comm, Mat *Mout, int Nx, int Ny, int Nz, double hx, double hy, double hz, int bx[2], int by[2], int bz[2], double *muinv,int DimPeriod);
 
-PetscErrorCode MoperatorGeneralBloch(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, double hx, double hy, double hz, int bx[2], int by[2], int bz[2], double *muinv, int DimPeriod, double blochbc[3], Vec epsOmegasqr, Vec epsOmegasqri);
-
-int SolarComputeKernel(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, double blochbc[3], double *kdlos, Vec kepsgrad);
-
 // from SourceGeneration.c
 PetscErrorCode SourceSingleSetX(MPI_Comm comm, Vec J, int Nx, int Ny, int Nz, int scx, int scy, int scz, double amp);
 
@@ -106,16 +102,25 @@ double ResonatorSolverRHS(int Mxyz,double *epsopt, double *grad, void *data);
 // from ResonatorSolverPOLXY.c
 double ResonatorSolverPOLXY(int Mxyz,double *epsopt, double *grad, void *data);
 
+// from MoperatorGeneralBloch.c
+PetscErrorCode MoperatorGeneralBloch(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, double hx, double hy, double hz, int bx[2], int by[2], int bz[2], double *muinv, int DimPeriod, double blochbc[3], Vec epsOmegasqr, Vec epsOmegasqri);
+
+// from MoperatorGeneralBloch2D.c
+int MoperatorGeneralBloch2D(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, double hx, double hy, double hz, int bx[2], int by[2], int bz[2], double *muinv, int DimPeriod, double blochbc[3], Vec epsOmegasqr, Vec epsOmegasqri);
+
 // from ResonatorSolverSolar.c
 double ResonatorSolverSolar(int Mxyz,double *epsopt, double *grad, void *data);
-// from ldossolar.c
-double ldossolar(int numofvar, double *epsopt, double *grad, void *data);
+PetscErrorCode SolarComputeKernel(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, double blochbc[3], double *kdlos, Vec kepsgrad);
+double ldossolar(int numofvar, double *varopt, double *grad, void *data);
+
+// from ResonatorSolverSolar2D.c
+double ResonatorSolverSolar2D(int Mxyz,double *epsopt, double *grad, void *data);
+PetscErrorCode SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, double blochbc[3], double *kdlos, Vec kepsgrad);
+double ldossolar2D(int numofvar, double *varopt, double *grad, void *data);
 
 // from SolarEgienvaluesSolver.c
 int SolarEigenvaluesSolver(Mat M, Vec epsCurrent, Vec epspmlQ, Mat D);
 
-// from MoperatorGeneralBloch2D.c
-int MoperatorGeneralBloch2D(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, double hx, double hy, double hz, int bx[2], int by[2], int bz[2], double *muinv, int DimPeriod, double blochbc[3], Vec epsOmegasqr, Vec epsOmegasqri);
 
 // from ResonatorSolverSolar2D.c
 double ResonatorSolverSolar2D(int Mxyz,double *epsopt, double *grad, void *data);
