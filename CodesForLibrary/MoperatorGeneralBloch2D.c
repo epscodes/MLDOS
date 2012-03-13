@@ -58,7 +58,7 @@ PetscErrorCode MoperatorGeneralBloch2D(MPI_Comm comm, Mat *Aout, int Nx, int Ny,
   // by default, I keep zero entries unless have ignore_zero_entries;
   PetscTruth flg;
   ierr = PetscOptionsHasName(PETSC_NULL,"-ignore_zero_entries",&flg);CHKERRQ(ierr);
-  PetscPrintf(PETSC_COMM_WORLD,"the ignore_zero_entries option is %d \n",flg);
+  //PetscPrintf(PETSC_COMM_WORLD,"the ignore_zero_entries option is %d \n",flg);
   if (flg) 
     {ierr = MatSetOption(A,MAT_IGNORE_ZERO_ENTRIES,PETSC_TRUE);CHKERRQ(ierr);}
 

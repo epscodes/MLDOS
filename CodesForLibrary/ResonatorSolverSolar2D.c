@@ -67,12 +67,13 @@ double ResonatorSolverSolar2D(int Mxyz,double *epsopt, double *grad, void *data)
       for (k =0; k<nkz; k++)
 	{
 	  double blochbc[3]={(i*kxstep+kxbase)*2*PI,(j*kystep+kybase)*2*PI,(k*kzstep+kzbase)*2*PI};
-	  PetscPrintf(PETSC_COMM_WORLD,"Compute value at k-points (%f,%f,%f) \n", blochbc[0]/(2*PI), blochbc[1]/(2*PI), blochbc[2]/(2*PI));
 	  double kldos;
 	  Vec kepsgrad;
 	  VecDuplicate(epsgrad,&kepsgrad);
 	  SolarComputeKernel2D(epsCurrent, epsOmegasqr, epsOmegasqri, blochbc, &kldos, kepsgrad);
-	  ldos += kldos;
+	  PetscPrintf(PETSC_COMM_WORLD,"in step %d the kldos at at k-points (%f,%f,%f) is %.16e \n", count, blochbc[0]/(2*PI), blochbc[1]/(2*PI), blochbc[2]/(2*PI), kldos);
+
+	  ldos += kldos;	 
 	  ierr=VecAXPY(epsgrad,1.0,kepsgrad); CHKERRQ(ierr);
 	  ierr=VecDestroy(kepsgrad); CHKERRQ(ierr);
 	}
@@ -171,7 +172,7 @@ int SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, doub
     SolarEigenvaluesSolver(M,epsCurrent, epspmlQ2D, D2D);
   
   // I always use LU decompostion;
-  PetscPrintf(PETSC_COMM_WORLD,"Same nonzero pattern, LU is redone! \n");
+  //PetscPrintf(PETSC_COMM_WORLD,"Same nonzero pattern, LU is redone! \n");
   ierr = KSPSetOperators(ksp,M,M,SAME_NONZERO_PATTERN);CHKERRQ(ierr); 
 
   /*-----------------KSP Solving------------------*/ 
@@ -181,7 +182,7 @@ int SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, doub
   double tldos;//ldos = -Re((weight.*J)'*E) or -Re(E'*(weight*J));
   *ptkldos = 0;
   int i;
-#if 1
+#if 0
   //clock_t tstart, tend;  int tpast; tstart=clock();  
   PetscLogDouble t1,t2,tpast;
   ierr = PetscGetTime(&t1);CHKERRQ(ierr);
@@ -252,7 +253,7 @@ int SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, doub
 
     }
 
-#if 1
+#if 0
   ierr = PetscGetTime(&t2);CHKERRQ(ierr);
   tpast = t2 - t1;
 
@@ -267,7 +268,7 @@ int SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, doub
   if (kepsgrad != NULL)
     VecScale(kepsgrad,1.0/NJ);
  
-  PetscPrintf(PETSC_COMM_WORLD," tpkldos is %.16e\n ", *ptkldos);
+  //PetscPrintf(PETSC_COMM_WORLD," tpkldos is %.16e\n ", *ptkldos);
 
   //Destroy Stuff;
   ierr=VecDestroy(J);CHKERRQ(ierr);

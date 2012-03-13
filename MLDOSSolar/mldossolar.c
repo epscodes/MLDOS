@@ -360,6 +360,7 @@ PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(
       ierr = VecDestroy(epscoef2D); CHKERRQ(ierr);
       ierr = VecDestroy(epsmedium2D); CHKERRQ(ierr);
       ierr = MatDestroy(D2D); CHKERRQ(ierr);
+      ierr = MatDestroy(TMSixToTwo); CHKERRQ(ierr);
     }
 
 
