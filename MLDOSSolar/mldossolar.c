@@ -106,10 +106,11 @@ int main(int argc, char **argv)
   PetscOptionsGetInt(PETSC_NULL,"-nkz",&nkz,&flg);  MyCheckAndOutputInt(flg,nkz,"nkz","nkz");
   nkxyz = nkx * nky * nkz;
   
-  PetscOptionsGetReal(PETSC_NULL,"-kxstep",&kxstep,&flg);  MyCheckAndOutputDouble(flg,kxstep,"kxstep","kxstep");
-  kystep = kxstep;
-  kzstep = kxstep;
-  kxyzstep = (Nz==1)*kxstep*kystep + (Nz>1)*kxstep*kystep*kzstep;  
+  //PetscOptionsGetReal(PETSC_NULL,"-kxstep",&kxstep,&flg);  MyCheckAndOutputDouble(flg,kxstep,"kxstep","kxstep");
+  kxstep = 0.5/nkx;
+  kystep = 0.5/nky;
+  kzstep = 0.5/nkz;
+  kxyzstep = (Nz==1)*kxstep*kystep*4 + (Nz>1)*kxstep*kystep*kzstep*8;  
 
  PetscOptionsGetReal(PETSC_NULL,"-kxbase",&kxbase,&flg);  MyCheckAndOutputDouble(flg,kxbase,"kxbase","kxbase");
 PetscOptionsGetReal(PETSC_NULL,"-kybase",&kybase,&flg);  MyCheckAndOutputDouble(flg,kybase,"kybase","kybase");

@@ -66,7 +66,8 @@ double ResonatorSolverSolar2D(int Mxyz,double *epsopt, double *grad, void *data)
     for (j=0; j<nky; j++)
       for (k =0; k<nkz; k++)
 	{
-	  double blochbc[3]={i*kxstep,j*kystep,k*kzstep};
+	  double blochbc[3]={(i*kxstep+kxbase)*2*PI,(j*kystep+kybase)*2*PI,(k*kzstep+kzbase)*2*PI};
+	  PetscPrintf(PETSC_COMM_WORLD,"Compute value at k-points (%f,%f,%f) \n", blochbc[0]/(2*PI), blochbc[1]/(2*PI), blochbc[2]/(2*PI));
 	  double kldos;
 	  Vec kepsgrad;
 	  VecDuplicate(epsgrad,&kepsgrad);
@@ -218,7 +219,7 @@ int SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, doub
       tldos = -1.0*epsjloc*tldos*hxyz;
       *ptkldos += tldos;
 
-      PetscPrintf(PETSC_COMM_WORLD,"---The current ldos at step %d (current position %d) is %.16e \n", count, i, tldos);
+      //PetscPrintf(PETSC_COMM_WORLD,"---The current ldos at step %d (current position %d) is %.16e \n", count, i, tldos);
 	   
       /*------------------------------------------------*/
       /*-----------Now take care of gradients-------------*/
@@ -317,8 +318,8 @@ double ldossolar2D(int Mxyz,double *varopt, double *grad, void *data)
     for (j=0; j<nky; j++)
       for (k =0; k<nkz; k++)
 	{
-	  double blochbc[3]={i*kxstep+kxbase*2*PI,j*kystep+kybase*2*PI,k*kzstep+kzbase*2*PI};
-	   PetscPrintf(PETSC_COMM_WORLD,"Compute value at k-points (%f,%f,%f) \n", blochbc[0], blochbc[1], blochbc[2]);
+	  double blochbc[3]={(i*kxstep+kxbase)*2*PI,(j*kystep+kybase)*2*PI,(k*kzstep+kzbase)*2*PI};
+	  PetscPrintf(PETSC_COMM_WORLD,"Compute value at k-points (%f,%f,%f) \n", blochbc[0]/(2*PI), blochbc[1]/(2*PI), blochbc[2]/(2*PI));
 	  double kldos;
 	  SolarComputeKernel2D(epsCurrent, epsOmegasqr, epsOmegasqri, blochbc, &kldos, PETSC_NULL);
 	  ldos += kldos;
