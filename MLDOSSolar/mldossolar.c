@@ -3,8 +3,8 @@
 #include <string.h>
 #include <nlopt.h>
 #include "Resonator.h"
-#include <slepc.h>
-#include <slepceps.h>
+//#include <slepc.h>
+//#include <slepceps.h>
 
 int count=1;
 int its=100;
@@ -42,7 +42,7 @@ MPI_Comm comm_group, comm_sum;
 int main(int argc, char **argv)
 {
   /* -------Initialize and Get the parameters from command line ------*/
-  SlepcInitialize(&argc, &argv, PETSC_NULL, PETSC_NULL);
+  PetscInitialize(&argc, &argv, PETSC_NULL, PETSC_NULL);
   PetscPrintf(PETSC_COMM_WORLD,"--------Initializing------ \n");
   PetscErrorCode ierr;
   PetscTruth flg;
@@ -384,7 +384,7 @@ PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(
     MPI_Barrier(PETSC_COMM_WORLD);
   }
   
-  ierr = SlepcFinalize(); CHKERRQ(ierr);
+  ierr = PetscFinalize(); CHKERRQ(ierr);
 
   return 0;
 }

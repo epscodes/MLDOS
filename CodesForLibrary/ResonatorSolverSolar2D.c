@@ -203,8 +203,8 @@ int SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, doub
   // constrcut M = curl \muinv curl - eps*omega^2 operator based on k;
   MoperatorGeneralBloch2D(comm_group, &M, Nx, Ny, Nz, hx, hy, hz, bx,by, bz, muinv, BCPeriod, blochbc, epsOmegasqr, epsOmegasqri);
 
-  if (NeedEig==1)
-    SolarEigenvaluesSolver(M,epsCurrent, epspmlQ2D, D2D);
+  //if (NeedEig==1)
+  //SolarEigenvaluesSolver(M,epsCurrent, epspmlQ2D, D2D);
   
   // I always use LU decompostion;
   //PetscPrintf(PETSC_COMM_WORLD,"Same nonzero pattern, LU is redone! \n");

@@ -4,7 +4,7 @@ export PETSC_DIR=/home/xdliang/MyLocal/petsc/petsc-3.1-p8
 export PETSC_ARCH=arch-opt
 export CavityLibPath=$PWD/CodesForLibrary
 export NloptLibPath=/usr/local/lib
-export SLEPC_DIR=/home/xdliang/MyLocal/slepc/slepc-3.1-p6
+#export SLEPC_DIR=/home/xdliang/MyLocal/slepc/slepc-3.1-p6
 
 #/home/xdliang/MyLocal/nlopt_0/.libs
 #/home/xdliang/Desktop/Cavity/CleanCodes/nlopt-modify/.libs
