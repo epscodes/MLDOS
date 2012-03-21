@@ -1,7 +1,7 @@
 #include <petsc.h>
 #include <time.h>
 #include "Resonator.h"
-
+#include <mpi.h>
 
 extern int count;
 extern int its;
@@ -25,6 +25,9 @@ extern Mat D2D, TMSixToTwo;
 extern Vec epspmlQ2D, epsmedium2D, vR2D, epscoef2D;
 extern double kxbase, kybase, kzbase;
 extern int NeedEig;
+
+extern int commsz, myrank, mygroup, myid, numgroups; 
+extern MPI_Comm comm_group, comm_sum;
 
 #undef __FUNCT__ 
 #define __FUNCT__ "ResonatorSolverSolar2D"
@@ -61,8 +64,10 @@ double ResonatorSolverSolar2D(int Mxyz,double *epsopt, double *grad, void *data)
   /*---------For each k, compute its ldos for all j------------------------*/
   int i, j, k;
   double ldos=0.0;
-  
-  for (i=0; i<nkx; i++)
+
+  int kingroup=nkx/numgroups;
+
+  for (i=mygroup*kingroup; i<(mygroup+1)*kingroup; i++)
     for (j=0; j<nky; j++)
       for (k =0; k<nkz; k++)
 	{
@@ -71,12 +76,42 @@ double ResonatorSolverSolar2D(int Mxyz,double *epsopt, double *grad, void *data)
 	  Vec kepsgrad;
 	  VecDuplicate(epsgrad,&kepsgrad);
 	  SolarComputeKernel2D(epsCurrent, epsOmegasqr, epsOmegasqri, blochbc, &kldos, kepsgrad);
-	  PetscPrintf(PETSC_COMM_WORLD,"in step %d the kldos at at k-points (%f,%f,%f) is %.16e \n", count, blochbc[0]/(2*PI), blochbc[1]/(2*PI), blochbc[2]/(2*PI), kldos);
+
+	  if (myid==0)
+	    {
+	      PetscPrintf(PETSC_COMM_SELF,"in step %d the kldos at at k-points (%f,%f,%f) is %.16e from group %d rank %d \n", count, blochbc[0]/(2*PI), blochbc[1]/(2*PI), blochbc[2]/(2*PI), kldos, mygroup, myrank);   
+	    }
+	  //PetscPrintf(PETSC_COMM_WORLD,"in step %d the kldos at at k-points (%f,%f,%f) is %.16e \n", count, blochbc[0]/(2*PI), blochbc[1]/(2*PI), blochbc[2]/(2*PI), kldos);
 
 	  ldos += kldos;	 
 	  ierr=VecAXPY(epsgrad,1.0,kepsgrad); CHKERRQ(ierr);
 	  ierr=VecDestroy(kepsgrad); CHKERRQ(ierr);
 	}
+  
+  double tmpldos=ldos;
+  MPI_Allreduce(&tmpldos,&ldos,1,MPI_DOUBLE,MPI_SUM,comm_sum);
+
+
+  Vec tmpsum;
+  VecDuplicate(epsgrad,&tmpsum);
+  VecCopy(epsgrad,tmpsum);
+  VecAssemblyBegin(tmpsum);
+  VecAssemblyEnd(tmpsum);
+
+  int nlocal;
+  VecGetLocalSize(epsgrad,&nlocal);
+
+  double *pt_tmpsum, *pt_epsgrad;
+  VecGetArray(tmpsum,&pt_tmpsum);
+  VecGetArray(epsgrad,&pt_epsgrad);
+
+  MPI_Allreduce(pt_tmpsum,pt_epsgrad, nlocal, MPI_DOUBLE, MPI_SUM, comm_sum);
+
+  VecRestoreArray(tmpsum,&pt_tmpsum);
+  VecRestoreArray(epsgrad,&pt_epsgrad);
+  
+  VecDestroy(tmpsum);
+
 
   // take the average;
   ldos = ldos * kxyzstep;
@@ -140,7 +175,7 @@ int SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, doub
   KSP ksp;
   PC pc; 
   PetscErrorCode ierr;
-  ierr = KSPCreate(PETSC_COMM_WORLD,&ksp);CHKERRQ(ierr);
+  ierr = KSPCreate(comm_group,&ksp);CHKERRQ(ierr);
   //ierr = KSPSetType(ksp, KSPPREONLY);CHKERRQ(ierr);
   ierr = KSPSetType(ksp, KSPGMRES);CHKERRQ(ierr);
   ierr = KSPGetPC(ksp,&pc);CHKERRQ(ierr);
@@ -152,7 +187,7 @@ int SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, doub
 
   /*Create Vectors */
   Vec J, b, x, tmp, tmpa, tmpb;
-  ierr = VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, 2*Nxyz, &J);CHKERRQ(ierr);
+  ierr = VecCreateMPI(comm_group, PETSC_DECIDE, 2*Nxyz, &J);CHKERRQ(ierr);
   ierr=VecDuplicate(J,&b); CHKERRQ(ierr);
   ierr=VecDuplicate(J,&x); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject) x, "Solution");CHKERRQ(ierr); 
@@ -166,7 +201,7 @@ int SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, doub
   /*------Create M Operator ---------------*/
   Mat M;  
   // constrcut M = curl \muinv curl - eps*omega^2 operator based on k;
-  MoperatorGeneralBloch2D(MPI_COMM_WORLD, &M, Nx, Ny, Nz, hx, hy, hz, bx,by, bz, muinv, BCPeriod, blochbc, epsOmegasqr, epsOmegasqri);
+  MoperatorGeneralBloch2D(comm_group, &M, Nx, Ny, Nz, hx, hy, hz, bx,by, bz, muinv, BCPeriod, blochbc, epsOmegasqr, epsOmegasqri);
 
   if (NeedEig==1)
     SolarEigenvaluesSolver(M,epsCurrent, epspmlQ2D, D2D);
@@ -193,7 +228,7 @@ int SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, doub
       VecSet(J,0.0); // initialization (important!)
       VecAssemblyBegin(J);
       VecAssemblyEnd(J);
-      SourceSingleSetGlobal(PETSC_COMM_WORLD,J, JRandPos[i],1.0/hxyz);	  
+      SourceSingleSetGlobal(comm_group,J, JRandPos[i],1.0/hxyz);	  
       // now b=i*omega*J;
       ierr = MatMult(D2D,J,b);CHKERRQ(ierr);
       VecScale(b,omega); 
@@ -323,6 +358,7 @@ double ldossolar2D(int Mxyz,double *varopt, double *grad, void *data)
 	  PetscPrintf(PETSC_COMM_WORLD,"Compute value at k-points (%f,%f,%f) \n", blochbc[0]/(2*PI), blochbc[1]/(2*PI), blochbc[2]/(2*PI));
 	  double kldos;
 	  SolarComputeKernel2D(epsCurrent, epsOmegasqr, epsOmegasqri, blochbc, &kldos, PETSC_NULL);
+	  PetscPrintf(PETSC_COMM_WORLD,"in step %d the kldos at at k-points (%f,%f,%f) is %.16e \n", count, blochbc[0]/(2*PI), blochbc[1]/(2*PI), blochbc[2]/(2*PI), kldos);
 	  ldos += kldos;
 	}
 

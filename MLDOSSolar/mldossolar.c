@@ -32,6 +32,11 @@ Vec epspmlQ2D, epsmedium2D, vR2D, epscoef2D;
 int TMID;
 int NeedEig;
 
+/*---------global variables for mpi---------------*/
+int commsz, myrank, mygroup, myid, numgroups; 
+MPI_Comm comm_group, comm_sum;
+
+
 #undef __FUNCT__ 
 #define __FUNCT__ "main" 
 int main(int argc, char **argv)
@@ -119,27 +124,32 @@ PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(
  PetscOptionsGetInt(PETSC_NULL,"-TMID",&TMID,&flg);  MyCheckAndOutputInt(flg,TMID,"TMID","TMID");
  PetscOptionsGetInt(PETSC_NULL,"-NeedEig",&NeedEig,&flg);  MyCheckAndOutputInt(flg,NeedEig,"NeedEig","NeedEig");
 
+ // get information for MPI;
+ PetscOptionsGetInt(PETSC_NULL,"-numgroups",&numgroups,&flg);  MyCheckAndOutputInt(flg,numgroups,"numgroups","numgroups");
+ // set up MPI slpit;
+ mympisetup();
+ PetscPrintf(PETSC_COMM_WORLD,"MPI split is set up !\n");
   /*--------------------------------------------------------*/
 
 
   /*---------- Set the current source---------*/
   //ImaginaryIMatrix;
-  ImagIMat(PETSC_COMM_WORLD, &D,6*Nxyz);
+  ImagIMat(comm_group, &D,6*Nxyz);
 
   /*-------Get the weight vector ------------------*/
   Vec weight;
 
   if (TMID==1)
     {       
-      TMprojmat(PETSC_COMM_WORLD, &TMSixToTwo, Nxyz);
+      TMprojmat(comm_group, &TMSixToTwo, Nxyz);
       ierr=MatGetVecs(TMSixToTwo,&weight,&epspmlQ2D); CHKERRQ(ierr);
       ierr=VecDuplicate(epspmlQ2D, &epsmedium2D); CHKERRQ(ierr);
       ierr=VecDuplicate(epspmlQ2D, &vR2D); CHKERRQ(ierr);
       ierr=VecDuplicate(epspmlQ2D, &epscoef2D); CHKERRQ(ierr);
-      ImagIMat(PETSC_COMM_WORLD, &D2D, 2*Nxyz);
+      ImagIMat(comm_group, &D2D, 2*Nxyz);
     }
   else
-    { ierr = VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, 6*Nxyz, &weight);CHKERRQ(ierr); }
+    { ierr = VecCreateMPI(comm_group, PETSC_DECIDE, 6*Nxyz, &weight);CHKERRQ(ierr); }
 
  
 
@@ -166,7 +176,7 @@ PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(
   Vec epspml;
   ierr = VecDuplicate(weight,&epspml);CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject) epspml,"EpsPMLFull"); CHKERRQ(ierr);
-  EpsPMLFull(PETSC_COMM_WORLD, epspml,Nx,Ny,Nz,Npmlx,Npmly,Npmlz,sigmax,sigmay,sigmaz,omega, LowerPML);
+  EpsPMLFull(comm_group, epspml,Nx,Ny,Nz,Npmlx,Npmly,Npmlz,sigmax,sigmay,sigmaz,omega, LowerPML);
 
   ierr = VecDuplicate(weight,&epspmlQ);CHKERRQ(ierr);
   ierr = VecDuplicate(weight,&epscoef);CHKERRQ(ierr);
@@ -191,9 +201,9 @@ PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(
   /*--------- Setup the interp matrix -------------------*/  
   //new routine for myinterp;
   if (TMID==1)
-    myinterpTM2D(PETSC_COMM_WORLD, &A, Nx,Ny,LowerPML*Npmlx,LowerPML*Npmly, Mx,My);
+    myinterpTM2D(comm_group, &A, Nx,Ny,LowerPML*Npmlx,LowerPML*Npmly, Mx,My);
   else
-    myinterp(PETSC_COMM_WORLD, &A, Nx,Ny,Nz, LowerPML*Npmlx,LowerPML*Npmly,LowerPML*Npmlz, Mx,My,Mz,Mzslab); // LoweerPML*Npmlx,..,.., specify where the interp starts;    
+    myinterp(comm_group, &A, Nx,Ny,Nz, LowerPML*Npmlx,LowerPML*Npmly,LowerPML*Npmlz, Mx,My,Mz,Mzslab); // LoweerPML*Npmlx,..,.., specify where the interp starts;    
  
   /*---------Create scatter used in the solver-------------*/
  
