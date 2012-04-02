@@ -47,8 +47,6 @@ int main(int argc, char **argv)
   PetscErrorCode ierr;
   PetscTruth flg;
   
-  mma_verbose=1;
-
   /*-------------------------------------------------*/
   int Mx,My,Mz,Mzslab, Npmlx,Npmly,Npmlz, Mxyz;
 
@@ -131,6 +129,8 @@ PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(
  PetscPrintf(PETSC_COMM_WORLD,"MPI split is set up !\n");
   /*--------------------------------------------------------*/
 
+ if (myrank==0)
+   mma_verbose=1;
 
   /*---------- Set the current source---------*/
   //ImaginaryIMatrix;

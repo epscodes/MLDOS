@@ -62,15 +62,14 @@ double ResonatorSolverSolar2D(int Mxyz,double *epsopt, double *grad, void *data)
   ierr = MatMult(D2D,epsOmegasqr,epsOmegasqri); CHKERRQ(ierr);
 
   /*---------For each k, compute its ldos for all j------------------------*/
-  int i, j, k;
+  int i, j, k, p, ptmp;
   double ldos=0.0;
-
-  int kingroup=nkx/numgroups;
-
-  for (i=mygroup*kingroup; i<(mygroup+1)*kingroup; i++)
-    for (j=0; j<nky; j++)
-      for (k =0; k<nkz; k++)
+  
+  for(p=mygroup; p<nkx*nky*nkz; p+=numgroups)
 	{
+	  k = (ptmp = p) % nkz;
+	  j = (ptmp /= nkz) % nky;
+	  i = ptmp /= nky ; 
 	  double blochbc[3]={(i*kxstep+kxbase)*2*PI,(j*kystep+kybase)*2*PI,(k*kzstep+kzbase)*2*PI};
 	  double kldos;
 	  Vec kepsgrad;
@@ -132,7 +131,6 @@ double ResonatorSolverSolar2D(int Mxyz,double *epsopt, double *grad, void *data)
   PetscPrintf(PETSC_COMM_WORLD,"---The average ldos at step %d  (including all currents) is %.16e \n", count,ldos); 
   PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------- \n");
 
- 
   /* Now store the epsilon at each step*/
   char buffer [100];
 

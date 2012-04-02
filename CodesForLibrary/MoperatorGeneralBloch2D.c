@@ -36,18 +36,18 @@ PetscErrorCode MoperatorGeneralBloch2D(MPI_Comm comm, Mat *Aout, int Nx, int Ny,
 {
   Mat A;
   PetscErrorCode ierr;
-  int Nc = 3, Nr = 2;
+  int Nc = 3;// Nr = 2;
   int ns, ne;
   int i,j,k, ic;
   double h[3]={hx,hy,hz}, hh;
-  int Nxyzc = Nx*Ny*Nz*Nc;
-  int Nxyzcr = Nx*Ny*Nz*Nc*Nr;
+  //int Nxyzc = Nx*Ny*Nz*Nc;
+  //int Nxyzcr = Nx*Ny*Nz*Nc*Nr;
   int b[3][2][3]; /* b[x/y/z direction][lo/hi][Ex/Ey/Ez] */
   int Nxyzarray[3]={Nx,Ny,Nz};
 
   dcomp muinvcp1cmp, muinvcp1lcmp, muinvcp2cmp, muinvcp2lcmp;
   dcomp cidu_phase, cp1idu_phase, cp1idl_phase, cp2idu_phase, cp2idl_phase;
-  double c1, c2, c3, c4;
+  double c1, c2, c3;
    /*-------------------------------------*/
 
 
