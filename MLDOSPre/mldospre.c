@@ -13,6 +13,19 @@ extern int mma_verbose;
 
 int Job;
 
+/*-----------------CreateGlobalVariables ----------------*/
+int Nx, Ny, Nz, Nxyz;
+double hx, hy, hz, hxyz, omega;
+double *muinv;
+Vec epspmlQ, epscoef, epsmedium, epsC, epsCi, epsP, x, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb;
+Mat A, D, M;
+IS from, to;
+char filenameComm[PETSC_MAX_PATH_LEN];
+KSP ksp;
+VecScatter scatter;
+/*--------------------------------------------------------*/
+
+
 #undef __FUNCT__ 
 #define __FUNCT__ "main" 
 int main(int argc, char **argv)
@@ -24,8 +37,11 @@ int main(int argc, char **argv)
 
   PetscTruth flg;
 
+  int myrank;
+  MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
+  if(myrank==0)   mma_verbose=1;
   /*-------------------------------------------------*/
-  int Nx,Ny,Nz,Mx,My,Mz,Mzslab, Npmlx,Npmly,Npmlz, Nxyz,Mxyz;
+  int Mx,My,Mz,Mzslab, Npmlx,Npmly,Npmlz,Mxyz;
 
   PetscOptionsGetInt(PETSC_NULL,"-Nx",&Nx,&flg);  MyCheckAndOutputInt(flg,Nx,"Nx","Nx");
   PetscOptionsGetInt(PETSC_NULL,"-Ny",&Ny,&flg);  MyCheckAndOutputInt(flg,Ny,"Ny","Nx");
@@ -54,7 +70,7 @@ int main(int argc, char **argv)
   PetscOptionsGetInt(PETSC_NULL,"-bzu",bz+1,&flg);  MyCheckAndOutputInt(flg,bz[1],"bzu","BC at z upper");
 
 
-  double hx, hy,hz, hxyz, omega, Qabs,epsair, epssub, RRT, sigmax, sigmay, sigmaz ;
+  double Qabs,epsair, epssub, RRT, sigmax, sigmay, sigmaz ;
    
   PetscOptionsGetReal(PETSC_NULL,"-hx",&hx,&flg);  MyCheckAndOutputDouble(flg,hx,"hx","hx");
   hy = hx;
@@ -73,7 +89,7 @@ int main(int argc, char **argv)
   sigmay = pmlsigma(RRT,Npmly*hy);
   sigmaz = pmlsigma(RRT,Npmlz*hz);  
 
-  char initialdata[PETSC_MAX_PATH_LEN], filenameComm[PETSC_MAX_PATH_LEN];
+  char initialdata[PETSC_MAX_PATH_LEN];
   PetscOptionsGetString(PETSC_NULL,"-initialdata",initialdata,PETSC_MAX_PATH_LEN,&flg); MyCheckAndOutputChar(flg,initialdata,"initialdata","Inputdata file");
   PetscOptionsGetString(PETSC_NULL,"-filenameComm",filenameComm,PETSC_MAX_PATH_LEN,&flg); MyCheckAndOutputChar(flg,filenameComm,"filenameComm","Output filenameComm");
 
@@ -100,6 +116,10 @@ int main(int argc, char **argv)
     {cz=(LowerPML)*floor(Nz/2); PetscPrintf(PETSC_COMM_WORLD,"cz is %d by default \n",cz);}
   else
     {PetscPrintf(PETSC_COMM_WORLD,"the current poisiont cz is %d \n",cz);}
+
+  int fixpteps;
+  PetscOptionsGetInt(PETSC_NULL,"-fixpteps",&fixpteps,&flg);  MyCheckAndOutputInt(flg,fixpteps,"fixpteps","fixpteps");
+  
     
   /*--------------------------------------------------------*/
 
@@ -107,7 +127,7 @@ int main(int argc, char **argv)
 
 
   /*---------- Set the current source---------*/
-  Mat D; //ImaginaryIMatrix;
+  //Mat D; //ImaginaryIMatrix;
   ImagIMat(PETSC_COMM_WORLD, &D,6*Nxyz);
 
   Vec J;
@@ -124,7 +144,7 @@ int main(int argc, char **argv)
   else
     PetscPrintf(PETSC_COMM_WORLD," Please specify correct direction of current: x (1) , y (2) or z (3)\n "); 
 
-  Vec b; // b= i*omega*J;
+  //Vec b; // b= i*omega*J;
   ierr = VecDuplicate(J,&b);CHKERRQ(ierr);
   ierr = MatMult(D,J,b);CHKERRQ(ierr);
   VecScale(b,omega);
@@ -139,11 +159,11 @@ int main(int argc, char **argv)
   else
     VecSet(weight,1.0);
 
-  Vec weightedJ;
+  //Vec weightedJ;
   ierr = VecDuplicate(J,&weightedJ); CHKERRQ(ierr);
   ierr = VecPointwiseMult(weightedJ,J,weight);
 
-  Vec vR;
+  //Vec vR;
   ierr = VecDuplicate(J,&vR); CHKERRQ(ierr);
   GetRealPartVec(vR, 6*Nxyz);
 
@@ -159,7 +179,7 @@ int main(int argc, char **argv)
   ierr = VecDestroy(muinvpml); CHKERRQ(ierr);  
 
   /*---------- Define PML eps vectors: epspml---------- */  
-  Vec epspml, epspmlQ, epscoef;
+  Vec epspml; // epspmlQ;
   ierr = VecDuplicate(J,&epspml);CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject) epspml,"EpsPMLFull"); CHKERRQ(ierr);
   EpsPMLFull(PETSC_COMM_WORLD, epspml,Nx,Ny,Nz,Npmlx,Npmly,Npmlz,sigmax,sigmay,sigmaz,omega, LowerPML);
@@ -174,29 +194,29 @@ int main(int argc, char **argv)
   /* for a samll eps block, interp it into yee-lattice. The interp matrix A and PML epspml only need to generated once;*/
   
 
-  Mat A; 
+  //Mat A; 
   //new routine for myinterp;
   myinterp(PETSC_COMM_WORLD, &A, Nx,Ny,Nz, LowerPML*Npmlx,LowerPML*Npmly,LowerPML*Npmlz, Mx,My,Mz,Mzslab); // LoweerPML*Npmlx,..,.., specify where the interp starts;  
 
-  Vec epsSReal, epsgrad, vgrad; // create compatiable vectors with A.
+  //Vec epsSReal, epsgrad, vgrad; // create compatiable vectors with A.
   ierr = MatGetVecs(A,&epsSReal, &epsgrad); CHKERRQ(ierr);  
   ierr = VecDuplicate(epsSReal, &vgrad); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject) epsSReal, "epsSReal");CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject) vgrad, "vgrad");CHKERRQ(ierr);
 
   /*---------Setup the epsmedium vector----------------*/
-  Vec epsmedium;
+  //Vec epsmedium;
   ierr = VecDuplicate(J,&epsmedium); CHKERRQ(ierr);
   GetMediumVec(epsmedium,Nz,Mz,epsair,epssub);
  
   /*--------- Setup the finitie difference matrix-------------*/
-  Mat M;
+  //Mat M;
   MoperatorGeneral(PETSC_COMM_WORLD, &M, Nx,Ny,Nz,hx,hy,hz, bx, by, bz,muinv,BCPeriod);
   free(muinv);
 
   /*--------Setup the KSP variables ---------------*/
   
-  KSP ksp;
+  //KSP ksp;
   PC pc; 
   ierr = KSPCreate(PETSC_COMM_WORLD,&ksp);CHKERRQ(ierr);
   //ierr = KSPSetType(ksp, KSPPREONLY);CHKERRQ(ierr);
@@ -209,7 +229,7 @@ int main(int argc, char **argv)
   ierr = KSPSetFromOptions(ksp);CHKERRQ(ierr);
 
   /*--------- Create the space for solution vector -------------*/
-  Vec x;
+  //Vec x;
   ierr = VecDuplicate(J,&x);CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject) x, "Solution");CHKERRQ(ierr); 
 
@@ -218,7 +238,7 @@ int main(int argc, char **argv)
   
   /*----------- Create the space for final eps -------------*/
 
-  Vec epsC, epsCi, epsP;
+  //Vec epsC, epsCi, epsP;
   ierr = VecDuplicate(J,&epsC);CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject) epsC, "EpsC");CHKERRQ(ierr);
   ierr = VecDuplicate(J,&epsCi);CHKERRQ(ierr);
@@ -229,15 +249,15 @@ int main(int argc, char **argv)
   ierr = VecAssemblyEnd(epsP); CHKERRQ(ierr); 
 
   /*------------ Create space used in the solver ------------*/
-  Vec vgradlocal,tmp, tmpa,tmpb;
+  //Vec vgradlocal,tmp, tmpa,tmpb;
   ierr = VecCreateSeq(PETSC_COMM_SELF, Mxyz, &vgradlocal); CHKERRQ(ierr);
   ierr = VecDuplicate(J,&tmp); CHKERRQ(ierr);
   ierr = VecDuplicate(J,&tmpa); CHKERRQ(ierr);
   ierr = VecDuplicate(J,&tmpb); CHKERRQ(ierr);
  
   /*------------ Create scatter used in the solver -----------*/
-  VecScatter scatter;
-  IS from, to;
+  //VecScatter scatter;
+  //IS from, to;
   ierr =ISCreateStride(PETSC_COMM_SELF,Mxyz,0,1,&from); CHKERRQ(ierr);
   ierr =ISCreateStride(PETSC_COMM_SELF,Mxyz,0,1,&to); CHKERRQ(ierr);
 
@@ -314,7 +334,7 @@ int main(int argc, char **argv)
 	}  //initial guess, lower bounds, upper bounds;
 
       //fix the dielectric at the center to be high for topology optimization;
-      if (Job==1)
+      if (Job==1 && fixpteps==1)
 	{
 	  epsopt[0]=myub;
 	  lb[0]=myub;
@@ -337,8 +357,8 @@ int main(int argc, char **argv)
     {
     case 1:
       {
-	myfundatatype myfundata = {Nx, Ny, Nz, hx, hy, hz, omega, ksp, epspmlQ, epscoef, epsmedium, epsC, epsCi, epsP, x, cglambda, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, M, from, to, scatter, filenameComm};
-      nlopt_set_max_objective(opt, ResonatorSolver, &myfundata);
+	//myfundatatype myfundata = {Nx, Ny, Nz, hx, hy, hz, omega, ksp, epspmlQ, epscoef, epsmedium, epsC, epsCi, epsP, x, cglambda, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, M, from, to, scatter, filenameComm};
+      nlopt_set_max_objective(opt, ResonatorSolverPre, NULL);
       result = nlopt_optimize(opt,epsopt,&maxf);
       }      
       break;
@@ -350,7 +370,7 @@ int main(int argc, char **argv)
 	PetscOptionsGetInt(PETSC_NULL,"-maxeigit",&maxeigit,&flg);  MyCheckAndOutputInt(flg,maxeigit,"maxeigit","maximum number of Eig solver iterations is");
 
 
-	  myfundatatype myfundata = {Nx, Ny, Nz, hx, hy, hz, omega, ksp, epspmlQ, epscoef, epsmedium, epsC, epsCi, epsP, x, cglambda, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, M, from, to, scatter, filenameComm};
+	myfundatatype myfundata = {Nx, Ny, Nz, hx, hy, hz, omega, ksp, epspmlQ, epscoef, epsmedium, epsC, epsCi, epsP, x, cglambda, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, M, from, to, scatter, filenameComm};
 
 	/*----------------------------------*/
 	EigenSolver(&myfundata,Linear, Eig, maxeigit);
@@ -420,7 +440,9 @@ int main(int argc, char **argv)
       if(Job==1)
 	{ //OutputVec(PETSC_COMM_WORLD, epsopt,filenameComm, "epsopt.m");
 	   OutputVec(PETSC_COMM_WORLD, epsSReal,filenameComm, "epsSReal.m");
-
+ 
+	   //OutputVec(PETSC_COMM_WORLD,x,filenameComm,"x.m");
+	   //OutputVec(PETSC_COMM_WORLD,epsgrad,filenameComm,"grad.m");
 	  int rankA;
 	  MPI_Comm_rank(PETSC_COMM_WORLD, &rankA);
 
