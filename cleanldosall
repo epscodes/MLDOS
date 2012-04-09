@@ -3,7 +3,8 @@
 export PETSC_DIR=/home/xdliang/MyLocal/petsc/petsc-3.1-p8
 export PETSC_ARCH=arch-debug
 export CavityLibPath=$PWD/CodesForLibrary
-export NloptLibPath=/usr/local/lib
+#export NloptLibPath=/usr/local/lib
+export NloptLibPath=${HOME}/MyLocal/nlopt_0/.libs
 
 #/home/xdliang/MyLocal/nlopt_0/.libs
 #/home/xdliang/Desktop/Cavity/CleanCodes/nlopt-modify/.libs
@@ -16,15 +17,15 @@ cd ../MLDOS/
 make clean
 rm *.h
 
-cd ../MLDOSRHS/
-make clean
-rm *.h
+#cd ../MLDOSRHS/ make clean rm *.h
 
-cd ../MLDOSPOLXY/
-make clean
-rm *.h
+#cd ../MLDOSPOLXY/ make clean rm *.h
 
 cd ../MLDOSSolar/
+make clean
+rm *.[oh]
+
+cd ../MLDOSPre/
 make clean
 rm *.[oh]
 

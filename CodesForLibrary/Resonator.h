@@ -130,6 +130,9 @@ int SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, doub
 // from mympisetup.c
 int mympisetup();
 
+// from ResonatorSolverPre.c
+double ResonatorSolverPre(int Mxyz, double *epsopt, double *grad, void *data);
+
 // datatype used for optimization of dielectric structure;
 typedef struct { 
   int SNx, SNy, SNz; 
