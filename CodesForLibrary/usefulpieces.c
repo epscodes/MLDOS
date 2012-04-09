@@ -367,3 +367,16 @@ PetscErrorCode myinterpSlab(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, in
 }
 
 
+/*--------- another method to calculate derivatives--------------*/
+#if 0
+ /* Adjoint-Method tells us Mtran*lambda = -weight.*J= -weightedJ; therefore we have to solve M*conj(lambda) = -weightedJ; then the derivative is -conj(lambda).*[-omega^2*epspml*(1+i/Qabs)]*x); it is equivalent to solve M*z = weightedJ, and derivative is z*epspml*(1+i/Qabs)*omega^2*x = z*epspmlQ*x*omega^2; */
+    Vec cglambda = ptmyfundata->Scglambda;
+   int its2;
+   ierr = KSPSolve(ksp,weightedJ,cglambda);CHKERRQ(ierr);
+   ierr = KSPGetIterationNumber(ksp,&its2);CHKERRQ(ierr);
+   ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations for Adjoint equation is %D----\n ",its2);CHKERRQ(ierr);
+   int aconj=0;
+   CmpVecProd(cglambda,epspmlQ,tmp,D,aconj,tmpa,tmpb);
+   CmpVecProd(x,tmp,epsgrad,D,aconj,tmpa,tmpb); 
+   VecScale(epsgrad,-pow(omega,2)*hx*hy); // the minus sign is because the quation we are solving is M z = -weightedJ; // the factor hx*hy is from 2D intergartion;
+#endif
