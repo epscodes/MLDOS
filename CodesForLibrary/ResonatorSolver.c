@@ -21,6 +21,9 @@ extern Vec epscoef, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb;
 extern  IS from, to;
 extern VecScatter scatter;
 
+/*global variable for min or max approach */
+extern int minapproach;
+
 #undef __FUNCT__ 
 #define __FUNCT__ "ResonatorSolver"
 double ResonatorSolver(int Mxyz,double *epsopt, double *grad, void *data)
@@ -101,7 +104,14 @@ double ResonatorSolver(int Mxyz,double *epsopt, double *grad, void *data)
   double ldos; //ldos = -Re((weight.*J)'*E) or -Re(E'*(weight*J));
   ierr = VecDot(x,weightedJ,&ldos);
   ldos = -1.0*ldos*hxyz;
-  PetscPrintf(PETSC_COMM_WORLD,"---The current ldos at step %d is %.16e \n", count,ldos);
+  if(minapproach)
+    {
+      PetscPrintf(PETSC_COMM_WORLD,"---The current ldos (minapp) at step %d is %.16e \n", count,ldos);
+      ldos = 1.0/ldos;
+    }
+  else
+    PetscPrintf(PETSC_COMM_WORLD,"---The current ldos at step %d is %.16e \n", count,ldos);
+
   PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------- \n");
 
  
@@ -135,7 +145,11 @@ double ResonatorSolver(int Mxyz,double *epsopt, double *grad, void *data)
    int aconj=0;
    CmpVecProd(x,epscoef,tmp,D,aconj,tmpa,tmpb);
    CmpVecProd(x,tmp,epsgrad,D,aconj,tmpa,tmpb);   
-   VecScale(epsgrad,hxyz); // the factor hxyz handle both 2D and 3D;
+   if (minapproach)
+     VecScale(epsgrad,-ldos*ldos*hxyz);
+   else
+     VecScale(epsgrad,hxyz);// the factor hxyz handle both 2D and 3D;
+
 #endif
 
    // set imaginary part of epsgrad = 0; ( we're only interested in real part;

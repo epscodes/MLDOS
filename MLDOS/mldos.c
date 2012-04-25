@@ -24,6 +24,8 @@ KSP ksp;
 VecScatter scatter;
 //for Job==3;
 double ldoscenter, omegacur=0;
+// for maximize ldos or mimimize 1/ldos apporach;
+int minapproach;
 /*------------------------------------------------------*/
 
 #undef __FUNCT__ 
@@ -117,6 +119,8 @@ int main(int argc, char **argv)
   int fixpteps;
   PetscOptionsGetInt(PETSC_NULL,"-fixpteps",&fixpteps,&flg);  MyCheckAndOutputInt(flg,fixpteps,"fixpteps","fixpteps");
 
+  // Get minapproach;
+  PetscOptionsGetInt(PETSC_NULL,"-minapproach",&minapproach,&flg);  MyCheckAndOutputInt(flg,minapproach,"minapproach","minapproach");
 
   /*--------------------------------------------------------*/
 
@@ -351,7 +355,11 @@ int main(int argc, char **argv)
     {
     case 1:
       {
-	nlopt_set_max_objective(opt, ResonatorSolver,NULL);// NULL: no data to be passed because of global variables;
+	if (minapproach)
+	  nlopt_set_min_objective(opt, ResonatorSolver,NULL);// NULL: no data to be passed because of global variables;
+	else
+	  nlopt_set_max_objective(opt, ResonatorSolver,NULL);
+
 	result = nlopt_optimize(opt,epsopt,&maxf);
       }      
       break;
