@@ -93,7 +93,7 @@ PetscErrorCode MyCheckAndOutputDouble(PetscTruth flg, double CmdVar, const char 
       SETERRQ(PETSC_ERR_ARG_WRONG,myerrmsg);
     }
   else
-    {PetscPrintf(PETSC_COMM_WORLD,"------%s is %g \n",strCmdVarDetail,CmdVar);}
+    {PetscPrintf(PETSC_COMM_WORLD,"------%s is %.16e \n",strCmdVarDetail,CmdVar);}
   PetscFunctionReturn(0);
 }
 

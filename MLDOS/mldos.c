@@ -39,6 +39,11 @@ int main(int argc, char **argv)
 
   PetscTruth flg;
 
+  int myrank;
+  MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
+  if(myrank==0) 
+    mma_verbose=1;
+    
   /*-------------------------------------------------*/
   int Mx,My,Mz,Mzslab, Npmlx,Npmly,Npmlz,Mxyz;
 
@@ -87,6 +92,9 @@ int main(int argc, char **argv)
   sigmax = pmlsigma(RRT,Npmlx*hx);
   sigmay = pmlsigma(RRT,Npmly*hy);
   sigmaz = pmlsigma(RRT,Npmlz*hz);  
+  PetscPrintf(PETSC_COMM_WORLD,"----sigmax is %.12e \n",sigmax);
+  PetscPrintf(PETSC_COMM_WORLD,"----sigmay is %.12e \n",sigmay);
+  PetscPrintf(PETSC_COMM_WORLD,"----sigmaz is %.12e \n",sigmaz);
 
   char initialdata[PETSC_MAX_PATH_LEN]; //filenameComm[PETSC_MAX_PATH_LEN];
   PetscOptionsGetString(PETSC_NULL,"-initialdata",initialdata,PETSC_MAX_PATH_LEN,&flg); MyCheckAndOutputChar(flg,initialdata,"initialdata","Inputdata file");
@@ -425,7 +433,7 @@ int main(int argc, char **argv)
 	PetscPrintf(PETSC_COMM_WORLD,"nlopt failed! \n", result);
       }
       else {
-	PetscPrintf(PETSC_COMM_WORLD,"found extremum  %0.16e\n", maxf); 
+	PetscPrintf(PETSC_COMM_WORLD,"found extremum  %0.16e\n", minapproach?1.0/maxf:maxf); 
       }
 
       PetscPrintf(PETSC_COMM_WORLD,"nlopt returned value is %d \n", result);
