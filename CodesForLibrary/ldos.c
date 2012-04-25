@@ -6,16 +6,25 @@ extern int count;
 extern int its;
 extern int maxit;
 
+/*--------global variables---------*/
+extern int Nx, Ny, Nz, Nxyz;
+extern double hx, hy, hz, hxyz, omega;
+extern Vec epspmlQ, epsC, epsCi, epsP, x, b, weightedJ, epsSReal;
+extern Mat A, D, M;
+extern KSP ksp;
+
+/*-------global variables for Job 3 -----*/
+extern double omegacur;
+extern double ldoscenter;
+
 #undef __FUNCT__ 
 #define __FUNCT__ "ldosdiff"
 double ldosdiff(int numofvar, double *varopt, double *grad, void *data)
 {
-  double ldosnew, lcenter;
+  double ldosnew;
   ldosnew = ldos(numofvar,varopt,grad,data);
-  myfundatatypeq *ptmyfundata = (myfundatatypeq *) data;
-  lcenter = ptmyfundata->Ssparedouble;
-  ldosnew =  fabs(ldosnew-lcenter);
-  PetscPrintf(PETSC_COMM_WORLD,"---The relative difference  is %.16f  \n",(ldosnew/lcenter));
+  ldosnew = fabs(ldosnew-ldoscenter);
+  PetscPrintf(PETSC_COMM_WORLD,"---The relative difference  is %.16f  \n",(ldosnew/ldoscenter));
   return ldosnew;
 }
 
@@ -27,44 +36,12 @@ double ldos(int numofvar,double *varopt, double *grad, void *data)
   
   PetscErrorCode ierr;
   
-  myfundatatypeq *ptmyfundata = (myfundatatypeq *) data;
-  
-  int Nx = ptmyfundata->SNx;
-  int Ny = ptmyfundata->SNy;
-  int Nz = ptmyfundata->SNz;
-  double hx = ptmyfundata->Shx;
-  double hy = ptmyfundata->Shy;
-  double hz = ptmyfundata->Shz;
-  double omega = ptmyfundata->Somega;
-  KSP ksp = ptmyfundata->Sksp;
-  Vec epspmlQ = ptmyfundata->SepspmlQ;
-  Vec epsC = ptmyfundata->SepsC;
-  Vec epsCi = ptmyfundata->SepsCi;
-  Vec epsP = ptmyfundata->SepsP;
-  Vec x = ptmyfundata->Sx;
-  Vec b = ptmyfundata->Sb;
-  Vec weightedJ = ptmyfundata->SweightedJ;
-  Vec epsSReal = ptmyfundata->SepsSReal;
-
-  Mat A = ptmyfundata->SA;
-  Mat D = ptmyfundata->SD;
-  Mat M = ptmyfundata->SM;
-
-  int Nxyz = Nx*Ny*Nz;
- 
-  // copy omegaopt to omega; !!! IMPORTANT CHANGE!!!
-
-  //spareptdouble is the address to store previous omega;
-  double *spareptdouble = ptmyfundata->Sspareptdouble;
-
   double omegasqrdiff;
-  omegasqrdiff=pow(varopt[0],2)-pow(spareptdouble[0],2);
-
-  spareptdouble[0] = varopt[0]; //update spareptdouble to current omega;
+  omegasqrdiff=pow(varopt[0],2)-pow(omegacur,2);
+  omegacur = varopt[0]; //update omegacur to current omega;
 
   // Update the diagonals of M Matrix;
   ModifyMatDiagonalsForOmega(M, A,D, epsSReal, epspmlQ, epsC, epsCi, epsP, Nxyz,omegasqrdiff);   
-
   
   #if 1
   //clock_t tstart, tend;  int tpast; tstart=clock();  
@@ -128,11 +105,10 @@ double ldos(int numofvar,double *varopt, double *grad, void *data)
   double l; //ldos = -Re((weight.*J)'*E) or -Re(E'*(weight*J));
   ierr = VecDot(x,weightedJ,&l);
 
-  double hxyz = (Nz==1)*hx*hy + (Nz>1)*hx*hy*hz;
-  l = -1.0*l*hxyz*spareptdouble[0]/omega; // spareptdouble[0]/omega is due to the i*omega*J in the RHS.
-  PetscPrintf(PETSC_COMM_WORLD,"---The ldos at omega  %.16e  is %.16e  (step %d) \n", *spareptdouble,l,count);
-  
 
+  l = -1.0*l*hxyz*omegacur/omega; // omegacur/omega is due to the i*omega*J in the RHS.
+  PetscPrintf(PETSC_COMM_WORLD,"---The ldos at omega  %.16e  is %.16e  (step %d) \n", omegacur,l,count);
+  
   /*-----take care of the gradient-------*/
   if (grad) {
       PetscPrintf(PETSC_COMM_WORLD,"---Significantly wrong!!! Derivative is not provided! \n");

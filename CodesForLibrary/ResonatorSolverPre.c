@@ -10,7 +10,7 @@ extern double cldos;
 
 /*global varaible */
 extern int Nx, Ny, Nz, Nxyz;
-extern double hx, hy, hz, hxyz,omega;
+extern double hx, hy, hz, hxyz,omega, Qabs;
 extern KSP ksp;
 extern Vec epspmlQ, epsmedium, epsC, epsCi, epsP, x, b, weightedJ, vR, epsSReal;
 extern Mat A, D, M;

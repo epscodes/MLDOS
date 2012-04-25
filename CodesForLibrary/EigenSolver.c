@@ -2,46 +2,20 @@
 #include <time.h>
 #include "Resonator.h"
 
+/*---------Global Variables---------------*/
+extern int Nx, Ny, Nz, Nxyz;
+extern double omega, hx, hy, hz, hxyz;
+extern Vec epspmlQ, epsmedium, epsC, epsCi, epsP, x, b, weightedJ, vR, epsSReal, tmp, tmpa, tmpb;
+extern Mat A, D, M;
+extern KSP ksp;
+extern char filenameComm[PETSC_MAX_PATH_LEN];
 
 #undef __FUNCT__ 
 #define __FUNCT__ "EigenSolver"
-PetscErrorCode EigenSolver(void *data, int Linear, int Eig, int maxeigit)
+PetscErrorCode EigenSolver(int Linear, int Eig, int maxeigit)
 {
-  
-  
   PetscErrorCode ierr;
-  
-  myfundatatype *ptmyfundata = (myfundatatype *) data;
-  
-  int Nx = ptmyfundata->SNx;
-  int Ny = ptmyfundata->SNy;
-  int Nz = ptmyfundata->SNz;
-  double omega = ptmyfundata->Somega;
-  KSP ksp = ptmyfundata->Sksp;
-  Vec epspmlQ = ptmyfundata->SepspmlQ;
-  Vec epsmedium = ptmyfundata->Sepsmedium;
-  Vec epsC = ptmyfundata->SepsC;
-  Vec epsCi = ptmyfundata->SepsCi;
-  Vec epsP = ptmyfundata->SepsP;
-  Vec x = ptmyfundata->Sx;
-  Vec b = ptmyfundata->Sb;
-  Vec weightedJ = ptmyfundata->SweightedJ;
-  Vec vR = ptmyfundata->SvR;
-  Vec epsSReal = ptmyfundata->SepsSReal;
-  double hx = ptmyfundata->Shx;
-  double hy = ptmyfundata->Shy;
-  double hz = ptmyfundata->Shz;
-  Mat A = ptmyfundata->SA;
-  Mat D = ptmyfundata->SD;
-  Mat M = ptmyfundata->SM;
-  
-  char *filenameComm = ptmyfundata->SfilenameComm;
-
-  int Nxyz = Nx*Ny*Nz;
-  double hxyz = (Nz==1)*hx*hy + (Nz>1)*hx*hy*hz;
-  Vec diagB = ptmyfundata->Stmp;
-  Vec tmpa = ptmyfundata->Stmpa;
-  Vec tmpb = ptmyfundata->Stmpb;
+  Vec diagB = tmp; // just use tmp's space; Be caution! 
   
 // Update the diagonals of M Matrix;
   ModifyMatDiagonals(M, A,D, epsSReal, epspmlQ, epsmedium, epsC, epsCi, epsP, Nxyz,omega);
@@ -80,8 +54,7 @@ PetscErrorCode EigenSolver(void *data, int Linear, int Eig, int maxeigit)
   int aconj=0;
   VecAYPX(diagB,0.0,epsP); // diagB should be just eps*pml*(1+i/Q); 
 
-  int i;
-  
+  int i;  
   for (i=1;i<maxeigit;i++)
     {      
       ierr = PetscGetTime(&t1);CHKERRQ(ierr);

@@ -420,10 +420,10 @@ int main(int argc, char **argv)
 	PetscOptionsGetInt(PETSC_NULL,"-maxeigit",&maxeigit,&flg);  MyCheckAndOutputInt(flg,maxeigit,"maxeigit","maximum number of Eig solver iterations is");
 
 
-	myfundatatype myfundata = {Nx, Ny, Nz, hx, hy, hz, omega, ksp, epspmlQ, epscoef, epsmedium, epsC, epsCi, epsP, x, cglambda, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, M, from, to, scatter, filenameComm};
+	//myfundatatype myfundata = {Nx, Ny, Nz, hx, hy, hz, omega, ksp, epspmlQ, epscoef, epsmedium, epsC, epsCi, epsP, x, cglambda, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, M, from, to, scatter, filenameComm};
 
 	/*----------------------------------*/
-	EigenSolver(&myfundata,Linear, Eig, maxeigit);
+	EigenSolver(Linear, Eig, maxeigit);
 	/*----------------------------------*/
 
 	OutputVec(PETSC_COMM_WORLD, weight,filenameComm, "weight.m");
@@ -432,6 +432,7 @@ int main(int argc, char **argv)
 
     case 3: //computeQ
       {
+	/* Job 3 do nothing;
 	int optmax;
 	PetscOptionsGetInt(PETSC_NULL,"-optmax",&optmax,&flg);  MyCheckAndOutputInt(flg,optmax,"optmax","Indicator for max ComputeQ is ");
 
@@ -453,6 +454,7 @@ int main(int argc, char **argv)
 	result = nlopt_optimize(opt,varopt,&maxf);
 	PetscPrintf(PETSC_COMM_WORLD,"--the frequency intersted is %0.16e------ \n",*varopt);
 	free(varopt);
+	*/
       }
       break;
 

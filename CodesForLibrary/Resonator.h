@@ -93,7 +93,7 @@ double ldos(int numofvar, double *epsopt, double *grad, void *data);
 double ldosdiff(int numofvar, double *epsopt, double *grad, void *data);
 
 // from EigenSolver.c
-PetscErrorCode EigenSolver(void *data, int Linear, int Eig, int maxeigit);
+PetscErrorCode EigenSolver(int Linear, int Eig, int maxeigit);
 PetscErrorCode RayleighQuotient(Mat M, Vec diagB, Vec x, Vec b, Vec vR, Mat D, Vec tmpa, Vec tmpb, int N, int i);
 
 // from ResonatorSolverRHS.c
@@ -136,6 +136,7 @@ double ResonatorSolverPre(int Mxyz, double *epsopt, double *grad, void *data);
 // from prefun.c
 PetscErrorCode prefun(int Mxyz,double *epsopt, double *deps, double *Hdeps, void *data);
 
+/* use global variables; so these data type are obsolete; 
 // datatype used for optimization of dielectric structure;
 typedef struct { 
   int SNx, SNy, SNz; 
@@ -162,6 +163,8 @@ typedef struct {
   VecScatter Sscatter;
   char *SfilenameComm;
 } myfundatatypeq;
+
+*/
 
 // datatype used for optimization of dielectric structure with mullitple RHS;
 typedef struct { 
