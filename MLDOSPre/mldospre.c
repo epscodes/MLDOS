@@ -9,22 +9,27 @@ int its=100;
 int maxit=20;
 double cldos=0;//set initial ldos;
 int ccount=1;
-extern int mma_verbose;
+int CCSA=41;
+extern int mma_verbose, ccsa_verbose;
 
 int Job;
 
 /*-----------------CreateGlobalVariables ----------------*/
 int Nx, Ny, Nz, Nxyz;
-double hx, hy, hz, hxyz, omega;
+double hx, hy, hz, hxyz, omega, Qabs;
 double *muinv;
-Vec epspmlQ, epscoef, epsmedium, epsC, epsCi, epsP, x, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb;
+Vec epspmlQ, epscoef, epsmedium, epsC, epsCi, epsP, x, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, tmpc, weight;
 Mat A, D, M;
 IS from, to;
 char filenameComm[PETSC_MAX_PATH_LEN];
 KSP ksp;
 VecScatter scatter;
 /*--------------------------------------------------------*/
-
+// variables for Pre;
+int withpre, PreInitialized, countPre=1, PreVerbose=1;
+Vec epsPre, epsLast, xPre, xLast, xWPreSqr, xWLastSqr, vscratch, vecdeps;
+double ldosLast, ldosPre;
+/*--------------------------------------------------*/
 
 #undef __FUNCT__ 
 #define __FUNCT__ "main" 
@@ -39,7 +44,10 @@ int main(int argc, char **argv)
 
   int myrank;
   MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
-  if(myrank==0)   mma_verbose=1;
+  if(myrank==0)   
+    { ccsa_verbose=1; 
+      mma_verbose=1;
+    }
   /*-------------------------------------------------*/
   int Mx,My,Mz,Mzslab, Npmlx,Npmly,Npmlz,Mxyz;
 
@@ -70,7 +78,7 @@ int main(int argc, char **argv)
   PetscOptionsGetInt(PETSC_NULL,"-bzu",bz+1,&flg);  MyCheckAndOutputInt(flg,bz[1],"bzu","BC at z upper");
 
 
-  double Qabs,epsair, epssub, RRT, sigmax, sigmay, sigmaz ;
+  double epsair, epssub, RRT, sigmax, sigmay, sigmaz ;
    
   PetscOptionsGetReal(PETSC_NULL,"-hx",&hx,&flg);  MyCheckAndOutputDouble(flg,hx,"hx","hx");
   hy = hx;
@@ -120,6 +128,14 @@ int main(int argc, char **argv)
   int fixpteps;
   PetscOptionsGetInt(PETSC_NULL,"-fixpteps",&fixpteps,&flg);  MyCheckAndOutputInt(flg,fixpteps,"fixpteps","fixpteps");
   
+  //get withpre
+  PetscOptionsGetInt(PETSC_NULL,"-withpre",&withpre,&flg);  MyCheckAndOutputInt(flg,withpre,"withpre","withpre");
+
+  int mynloptlocalalg;
+  if (withpre)
+    {
+      PetscOptionsGetInt(PETSC_NULL,"-mynloptlocalalg",&mynloptlocalalg,&flg);  MyCheckAndOutputInt(flg,mynloptlocalalg,"mynloptlocalalg","The local optimization algorithm used ");
+    }
     
   /*--------------------------------------------------------*/
 
@@ -150,7 +166,7 @@ int main(int argc, char **argv)
   VecScale(b,omega);
 
   /*-------Get the weight vector ------------------*/
-  Vec weight;
+  //Vec weight;
   ierr = VecDuplicate(J,&weight); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject) weight, "weight");CHKERRQ(ierr);
 
@@ -232,7 +248,7 @@ int main(int argc, char **argv)
   //Vec x;
   ierr = VecDuplicate(J,&x);CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject) x, "Solution");CHKERRQ(ierr); 
-
+  
   Vec cglambda;
   ierr = VecDuplicate(J,&cglambda);CHKERRQ(ierr);
   
@@ -254,6 +270,7 @@ int main(int argc, char **argv)
   ierr = VecDuplicate(J,&tmp); CHKERRQ(ierr);
   ierr = VecDuplicate(J,&tmpa); CHKERRQ(ierr);
   ierr = VecDuplicate(J,&tmpb); CHKERRQ(ierr);
+  ierr = VecDuplicate(J,&tmpc); CHKERRQ(ierr);
  
   /*------------ Create scatter used in the solver -----------*/
   //VecScatter scatter;
@@ -280,13 +297,12 @@ int main(int argc, char **argv)
   fclose(ptf);
 
 
-
   /*----declare these data types, althought they may not be used for job 2 -----------------*/
  
   double mylb,myub, *varopt, *lb=NULL, *ub=NULL;
   int maxeval, maxtime, mynloptalg;
   double maxf;
-  nlopt_opt  opt;
+  nlopt_opt  opt, local_opt;
   nlopt_result result;
   /*--------------------------------------------------------------*/
   /*----Now based on Command Line, Do the corresponding job----*/
@@ -342,12 +358,46 @@ int main(int argc, char **argv)
 	}
 
 
-      opt = nlopt_create(mynloptalg, numofvar);
+ /*-------create spaces for pre--------------*/
+      if (Job==1 && withpre==1)
+	{
+	  if(mynloptalg==CCSA)
+	    {
+	      ierr=VecDuplicate(epsSReal,&epsPre); CHKERRQ(ierr);
+	      ierr=VecDuplicate(epsSReal,&epsLast); CHKERRQ(ierr);
+	      ierr=VecDuplicate(epsSReal,&xPre); CHKERRQ(ierr); 
+	      ierr=VecDuplicate(epsSReal,&xLast); CHKERRQ(ierr);
+	      ierr=VecDuplicate(epsSReal,&xWPreSqr);CHKERRQ(ierr);
+	      ierr=VecDuplicate(epsSReal,&xWLastSqr);CHKERRQ(ierr);
+	      ierr=VecDuplicate(epsSReal,&vscratch);CHKERRQ(ierr);
+	      ierr=VecDuplicate(epsSReal,&vecdeps);CHKERRQ(ierr);
+	    }
+	  else
+	    PetscPrintf(PETSC_COMM_WORLD,"the nlopt algorithm you provided do not support preconditioning! ignoring withpre option \n");
+	}
 
+
+      opt = nlopt_create(mynloptalg, numofvar);
       nlopt_set_lower_bounds(opt,lb);
       nlopt_set_upper_bounds(opt,ub);
       nlopt_set_maxeval(opt,maxeval);
       nlopt_set_maxtime(opt,maxtime);
+
+      if(Job==1 && withpre==1 && mynloptalg==CCSA)
+	{
+	  PetscPrintf(PETSC_COMM_WORLD,"using the precondition version \n");
+	  nlopt_set_precond_max_objective(opt, ResonatorSolverPre, prefun, NULL);
+	  if (mynloptlocalalg)
+	    { 
+	      local_opt=nlopt_create(mynloptlocalalg,Mxyz);
+	      nlopt_set_ftol_rel(local_opt, 1e-14);
+	      nlopt_set_maxeval(local_opt,100000);
+	      nlopt_set_local_optimizer(opt,local_opt);
+	    }
+	}
+      else if (Job==1 && !withpre)
+	nlopt_set_max_objective(opt,ResonatorSolverPre,NULL);
+      
     }
 
 
@@ -358,7 +408,7 @@ int main(int argc, char **argv)
     case 1:
       {
 	//myfundatatype myfundata = {Nx, Ny, Nz, hx, hy, hz, omega, ksp, epspmlQ, epscoef, epsmedium, epsC, epsCi, epsP, x, cglambda, b, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, A, D, M, from, to, scatter, filenameComm};
-      nlopt_set_max_objective(opt, ResonatorSolverPre, NULL);
+	//nlopt_set_max_objective(opt, ResonatorSolverPre, NULL);
       result = nlopt_optimize(opt,epsopt,&maxf);
       }      
       break;
@@ -407,7 +457,7 @@ int main(int argc, char **argv)
       break;
 
     default:
-      PetscPrintf(PETSC_COMM_WORLD,"--------Inteeresting! You're doing nothing!--------\n ");
+      PetscPrintf(PETSC_COMM_WORLD,"--------Interesting! You're doing nothing!--------\n ");
  }
 
 
@@ -498,6 +548,22 @@ int main(int argc, char **argv)
 
   ISDestroy(from);
   ISDestroy(to);
+
+  if(withpre==1)
+    {
+       ierr=VecDestroy(epsLast);CHKERRQ(ierr);
+       ierr=VecDestroy(epsPre);CHKERRQ(ierr);
+       ierr=VecDestroy(xLast);CHKERRQ(ierr);
+       ierr=VecDestroy(xPre);CHKERRQ(ierr);
+       ierr=VecDestroy(xWLastSqr);CHKERRQ(ierr);
+       ierr=VecDestroy(xWPreSqr);CHKERRQ(ierr);
+       ierr=VecDestroy(vscratch);CHKERRQ(ierr);
+       ierr=VecDestroy(vecdeps);CHKERRQ(ierr);
+       if (mynloptlocalalg) 
+	 nlopt_destroy(local_opt);
+    }
+
+
 
   /*------------ finalize the program -------------*/
 

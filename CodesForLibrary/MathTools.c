@@ -350,3 +350,14 @@ PetscErrorCode MatSetTwoDiagonals(Mat M, Vec epsC, Mat D, double sign)
   
   PetscFunctionReturn(0);
 }
+
+
+#undef __FUNCT__ 
+#define __FUNCT__ "CmpVecScale"
+PetscErrorCode CmpVecScale(Vec vin, Vec vout, double a, double b, Mat D, Vec vini)
+{
+  PetscErrorCode ierr; 
+  ierr=MatMult(D,vin,vini);CHKERRQ(ierr);
+  VecAXPBYPCZ(vout,a,b,1.0, vin,vini); 
+  PetscFunctionReturn(0);
+}

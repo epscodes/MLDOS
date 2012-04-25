@@ -17,10 +17,14 @@ extern Mat A, D, M;
 extern char filenameComm[PETSC_MAX_PATH_LEN];
 
 /*global variables for grad*/
-extern Vec epscoef, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb;
+extern Vec epscoef, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, tmpc;
 extern  IS from, to;
 extern VecScatter scatter;
  
+/*global variables for pre */
+extern int withpre;
+extern Vec epsLast, xLast, xWLastSqr, weight;
+extern double ldosLast;
 
 #undef __FUNCT__ 
 #define __FUNCT__ "ResonatorSolverPre"
@@ -103,6 +107,34 @@ double ResonatorSolverPre(int Mxyz,double *epsopt, double *grad, void *data)
   ldos = -1.0*ldos*hxyz;
   PetscPrintf(PETSC_COMM_WORLD,"---The current ldos at step %d is %.16e \n", count,ldos);
   PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------- \n");
+
+  if (withpre==1)
+    {      
+      
+      ldosLast = ldos; //update ldosLast;
+      VecCopy(epsSReal, epsLast); //update epsLast
+      VecPointwiseMult(tmp,x,vR); //tmpa stores realpart of x;
+      MatMultTranspose(A,tmp, xLast); // xLast store x in a small grid;
+      
+      /* 
+      VecPointwiseMult(tmp,x,x);
+      VecPointwiseMult(tmp,tmp,weight);
+      VecPointwiseMult(tmp,tmp,vR);
+      MatMultTranspose(A,tmp,xWLastSqr); // xWLast store xweight in a small grid;
+
+      */
+      // x^2 in complex sense; xWLastsqr=x.^2*weight; furhter need factor(1+1i/Qabs) TODO;
+       CmpVecProd(x,x,tmp,D,0,tmpa,tmpb);
+      CmpVecProd(tmp,weight,tmpc,D,0,tmpa,tmpb);
+      CmpVecScale(tmpc,tmp,1.0,1.0/Qabs,D,tmpa);
+      VecPointwiseMult(tmpc,tmp,vR);
+      MatMultTranspose(A,tmpc,xWLastSqr);
+
+    }
+
+
+
+
 
   /* Now store the epsilon at each step*/
   char buffer [100];

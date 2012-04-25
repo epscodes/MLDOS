@@ -133,6 +133,9 @@ int mympisetup();
 // from ResonatorSolverPre.c
 double ResonatorSolverPre(int Mxyz, double *epsopt, double *grad, void *data);
 
+// from prefun.c
+PetscErrorCode prefun(int Mxyz,double *epsopt, double *deps, double *Hdeps, void *data);
+
 // datatype used for optimization of dielectric structure;
 typedef struct { 
   int SNx, SNy, SNz; 
