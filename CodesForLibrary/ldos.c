@@ -88,7 +88,7 @@ double ldos(int numofvar,double *varopt, double *grad, void *data)
   ierr = VecNorm(xdiff,NORM_INFINITY,&norm);CHKERRQ(ierr);
   //ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"---Norm of error %A, Kryolv Iterations %D----\n ",norm,its);CHKERRQ(ierr);    
-  ierr=VecDestroy(xdiff);CHKERRQ(ierr);
+  ierr=VecDestroy(&xdiff);CHKERRQ(ierr);
 #endif
 
   /*--------------Finish KSP Solving---------------*/

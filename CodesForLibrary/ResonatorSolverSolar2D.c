@@ -84,7 +84,7 @@ double ResonatorSolverSolar2D(int Mxyz,double *epsopt, double *grad, void *data)
 
 	  ldos += kldos;	 
 	  ierr=VecAXPY(epsgrad,1.0,kepsgrad); CHKERRQ(ierr);
-	  ierr=VecDestroy(kepsgrad); CHKERRQ(ierr);
+	  ierr=VecDestroy(&kepsgrad); CHKERRQ(ierr);
 	}
   
   double tmpldos=ldos;
@@ -109,7 +109,7 @@ double ResonatorSolverSolar2D(int Mxyz,double *epsopt, double *grad, void *data)
   VecRestoreArray(tmpsum,&pt_tmpsum);
   VecRestoreArray(epsgrad,&pt_epsgrad);
   
-  VecDestroy(tmpsum);
+  VecDestroy(&tmpsum);
 
 
   // take the average;
@@ -152,13 +152,13 @@ double ResonatorSolverSolar2D(int Mxyz,double *epsopt, double *grad, void *data)
     }
 
   /*---Destroy Vectors *----*/
-  ierr=VecDestroy(epsSReal);CHKERRQ(ierr);
-  ierr=VecDestroy(epsgrad);CHKERRQ(ierr);
-  ierr=VecDestroy(epsOmegasqr);CHKERRQ(ierr);
-  ierr=VecDestroy(epsOmegasqri);CHKERRQ(ierr);
-  ierr=VecDestroy(vgrad);CHKERRQ(ierr);
-  ierr=VecDestroy(vgradlocal);CHKERRQ(ierr);
-  ierr=VecDestroy(epsCurrent);CHKERRQ(ierr); 
+  ierr=VecDestroy(&epsSReal);CHKERRQ(ierr);
+  ierr=VecDestroy(&epsgrad);CHKERRQ(ierr);
+  ierr=VecDestroy(&epsOmegasqr);CHKERRQ(ierr);
+  ierr=VecDestroy(&epsOmegasqri);CHKERRQ(ierr);
+  ierr=VecDestroy(&vgrad);CHKERRQ(ierr);
+  ierr=VecDestroy(&vgradlocal);CHKERRQ(ierr);
+  ierr=VecDestroy(&epsCurrent);CHKERRQ(ierr); 
  
   count++;
   return ldos;
@@ -178,7 +178,7 @@ int SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, doub
   ierr = KSPSetType(ksp, KSPGMRES);CHKERRQ(ierr);
   ierr = KSPGetPC(ksp,&pc);CHKERRQ(ierr);
   ierr = PCSetType(pc,PCLU);CHKERRQ(ierr);
-  ierr = PCFactorSetMatSolverPackage(pc,MAT_SOLVER_MUMPS);CHKERRQ(ierr);
+  ierr = PCFactorSetMatSolverPackage(pc,MATSOLVERMUMPS);CHKERRQ(ierr);
   int maxkspit = 20;
   ierr = KSPSetTolerances(ksp,1e-12,PETSC_DEFAULT,PETSC_DEFAULT,maxkspit);CHKERRQ(ierr);
   ierr = KSPSetFromOptions(ksp);CHKERRQ(ierr);
@@ -280,7 +280,7 @@ int SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, doub
 	  VecAXPY(tepsgrad,1.0,tmp); // tepsgrad(i) = tepsgrad(i) + tldos/epsjloc;
 	  VecAXPY(kepsgrad,1.0,tepsgrad); // epsgrad+=tepsgrad;
 	 
-	  ierr=VecDestroy(tepsgrad);CHKERRQ(ierr);
+	  ierr=VecDestroy(&tepsgrad);CHKERRQ(ierr);
 		
 	}
 
@@ -304,14 +304,14 @@ int SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, doub
   //PetscPrintf(PETSC_COMM_WORLD," tpkldos is %.16e\n ", *ptkldos);
 
   //Destroy Stuff;
-  ierr=VecDestroy(J);CHKERRQ(ierr);
-  ierr=VecDestroy(b);CHKERRQ(ierr);
-  ierr=VecDestroy(x); CHKERRQ(ierr);
-  ierr=VecDestroy(tmp); CHKERRQ(ierr);
-  ierr=VecDestroy(tmpa); CHKERRQ(ierr);
-  ierr=VecDestroy(tmpb); CHKERRQ(ierr);
-  ierr=MatDestroy(M); CHKERRQ(ierr);
-  ierr=KSPDestroy(ksp);CHKERRQ(ierr);
+  ierr=VecDestroy(&J);CHKERRQ(ierr);
+  ierr=VecDestroy(&b);CHKERRQ(ierr);
+  ierr=VecDestroy(&x); CHKERRQ(ierr);
+  ierr=VecDestroy(&tmp); CHKERRQ(ierr);
+  ierr=VecDestroy(&tmpa); CHKERRQ(ierr);
+  ierr=VecDestroy(&tmpb); CHKERRQ(ierr);
+  ierr=MatDestroy(&M); CHKERRQ(ierr);
+  ierr=KSPDestroy(&ksp);CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 }
@@ -370,10 +370,10 @@ double ldossolar2D(int Mxyz,double *varopt, double *grad, void *data)
     }
 
   /*---Destroy Vectors *----*/
-  ierr=VecDestroy(epsSReal);CHKERRQ(ierr);
-  ierr=VecDestroy(epsOmegasqr);CHKERRQ(ierr);
-  ierr=VecDestroy(epsOmegasqri);CHKERRQ(ierr);
-  ierr=VecDestroy(epsCurrent);CHKERRQ(ierr); 
+  ierr=VecDestroy(&epsSReal);CHKERRQ(ierr);
+  ierr=VecDestroy(&epsOmegasqr);CHKERRQ(ierr);
+  ierr=VecDestroy(&epsOmegasqri);CHKERRQ(ierr);
+  ierr=VecDestroy(&epsCurrent);CHKERRQ(ierr); 
  
   count++;
   return ldos;

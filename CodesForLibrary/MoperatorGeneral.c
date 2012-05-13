@@ -40,12 +40,17 @@ PetscErrorCode MoperatorGeneral(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz
    /*-------------------------------------*/
 
 
-  ierr = MatCreateMPIAIJ(PETSC_COMM_WORLD, PETSC_DECIDE, PETSC_DECIDE, Nxyzcr, Nxyzcr, 26, NULL, 26, NULL, &A); CHKERRQ(ierr);
+  //ierr = MatCreateMPIAIJ(PETSC_COMM_WORLD, PETSC_DECIDE, PETSC_DECIDE, Nxyzcr, Nxyzcr, 26, NULL, 26, NULL, &A); CHKERRQ(ierr);
+  MatCreate(comm, &A);
+  MatSetType(A,MATMPIAIJ);
+  MatSetSizes(A,PETSC_DECIDE, PETSC_DECIDE, Nxyzcr, Nxyzcr);
+  MatMPIAIJSetPreallocation(A, 26, PETSC_NULL, 26, PETSC_NULL);
+
   ierr = MatGetOwnershipRange(A, &ns, &ne); CHKERRQ(ierr);
   
 
   // by default, I keep zero entries unless have ignore_zero_entries;
-  PetscTruth flg;
+  PetscBool flg;
   ierr = PetscOptionsHasName(PETSC_NULL,"-ignore_zero_entries",&flg);CHKERRQ(ierr);
   PetscPrintf(PETSC_COMM_WORLD,"the ignore_zero_entries option is %d \n",flg);
   if (flg) 

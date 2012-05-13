@@ -12,7 +12,7 @@ PetscErrorCode OutputVec(MPI_Comm comm, Vec x, const char *filenameComm, const c
  ierr = PetscViewerASCIIOpen(comm, filename, &viewer); CHKERRQ(ierr);
  ierr = PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB); CHKERRQ(ierr);
  ierr = VecView(x,viewer); CHKERRQ(ierr);
- ierr = PetscViewerDestroy(viewer); CHKERRQ(ierr);
+ ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
  PetscFunctionReturn(0);
 }
 
@@ -28,7 +28,7 @@ PetscErrorCode OutputMat(MPI_Comm comm, Mat A, const char *filenameComm, const c
  ierr = PetscViewerASCIIOpen(comm, filename, &viewer); CHKERRQ(ierr);
  ierr = PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);CHKERRQ(ierr);
  ierr = MatView(A,viewer); CHKERRQ(ierr);
- ierr = PetscViewerDestroy(viewer); CHKERRQ(ierr);
+ ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
  // When runing parallely, it may need -mat_ascii_output_large
  PetscFunctionReturn(0);
 }
@@ -43,7 +43,7 @@ PetscErrorCode RetrieveVecPoints(Vec x, int Npt, int *Pos, double *ptValues)
   VecScatter scatter;
   IS from, to;
   ierr = VecCreateSeq(PETSC_COMM_SELF, Npt, &T);CHKERRQ(ierr);
-  ierr = ISCreateGeneral(PETSC_COMM_SELF,Npt, Pos, &from);CHKERRQ(ierr);
+  ierr = ISCreateGeneral(PETSC_COMM_SELF,Npt, Pos,PETSC_COPY_VALUES, &from);CHKERRQ(ierr);
   ierr = ISCreateStride(PETSC_COMM_SELF,Npt,0,1, &to);CHKERRQ(ierr);
   ierr = VecScatterCreate(x,from,T,to,&scatter);CHKERRQ(ierr);
   ierr = VecScatterBegin(scatter,x,T,INSERT_VALUES,SCATTER_FORWARD);CHKERRQ(ierr);
@@ -56,10 +56,10 @@ PetscErrorCode RetrieveVecPoints(Vec x, int Npt, int *Pos, double *ptValues)
   
   ierr = VecGetValues(T,Npt,ix,ptValues);
 
-  ierr = ISDestroy(from);CHKERRQ(ierr);
-  ierr = ISDestroy(to);CHKERRQ(ierr);
- ierr =  VecScatterDestroy(scatter);CHKERRQ(ierr);
-  ierr = VecDestroy(T);CHKERRQ(ierr);
+  ierr = ISDestroy(&from);CHKERRQ(ierr);
+  ierr = ISDestroy(&to);CHKERRQ(ierr);
+ ierr =  VecScatterDestroy(&scatter);CHKERRQ(ierr);
+  ierr = VecDestroy(&T);CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 }
@@ -68,13 +68,13 @@ PetscErrorCode RetrieveVecPoints(Vec x, int Npt, int *Pos, double *ptValues)
 
 #undef __FUNCT__ 
 #define __FUNCT__ "MyCheckAndOutputInt"
-PetscErrorCode MyCheckAndOutputInt(PetscTruth flg, int CmdVar, const char *strCmdVar, const char *strCmdVarDetail)
+PetscErrorCode MyCheckAndOutputInt(PetscBool flg, int CmdVar, const char *strCmdVar, const char *strCmdVarDetail)
 {
   if (!flg) 
     { 
       char myerrmsg[100];
       sprintf(myerrmsg,"Please indicate %s with -%s option",strCmdVarDetail, strCmdVar);
-      SETERRQ(PETSC_ERR_ARG_WRONG,myerrmsg);
+      SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_WRONG,myerrmsg);
     }
   else
     {PetscPrintf(PETSC_COMM_WORLD,"------%s is %d \n",strCmdVarDetail,CmdVar);}
@@ -84,13 +84,13 @@ PetscErrorCode MyCheckAndOutputInt(PetscTruth flg, int CmdVar, const char *strCm
 
 #undef __FUNCT__ 
 #define __FUNCT__ "MyCheckAndOutputDouble"
-PetscErrorCode MyCheckAndOutputDouble(PetscTruth flg, double CmdVar, const char *strCmdVar, const char *strCmdVarDetail)
+PetscErrorCode MyCheckAndOutputDouble(PetscBool flg, double CmdVar, const char *strCmdVar, const char *strCmdVarDetail)
 {
   if (!flg) 
     { 
       char myerrmsg[100];
       sprintf(myerrmsg,"Please indicate %s with -%s option",strCmdVarDetail, strCmdVar);
-      SETERRQ(PETSC_ERR_ARG_WRONG,myerrmsg);
+      SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_WRONG,myerrmsg);
     }
   else
     {PetscPrintf(PETSC_COMM_WORLD,"------%s is %.16e \n",strCmdVarDetail,CmdVar);}
@@ -101,13 +101,13 @@ PetscErrorCode MyCheckAndOutputDouble(PetscTruth flg, double CmdVar, const char 
 
 #undef __FUNCT__ 
 #define __FUNCT__ "MyCheckAndOutputChar"
-PetscErrorCode MyCheckAndOutputChar(PetscTruth flg, char *CmdVar, const char *strCmdVar, const char *strCmdVarDetail)
+PetscErrorCode MyCheckAndOutputChar(PetscBool flg, char *CmdVar, const char *strCmdVar, const char *strCmdVarDetail)
 {
   if (!flg) 
     { 
       char myerrmsg[100];
       sprintf(myerrmsg,"Please indicate %s with -%s option",strCmdVarDetail, strCmdVar);
-      SETERRQ(PETSC_ERR_ARG_WRONG,myerrmsg);
+      SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_WRONG,myerrmsg);
     }
   else
     {PetscPrintf(PETSC_COMM_WORLD,"------%s is %s \n",strCmdVarDetail,CmdVar);}
@@ -122,13 +122,13 @@ PetscErrorCode MyCheckAndOutputChar(PetscTruth flg, char *CmdVar, const char *st
 #define __FUNCT__ "GetIntParaCmdLine"
 PetscErrorCode GetIntParaCmdLine(int *ptCmdVar, const char *strCmdVar, const char *strCmdVarDetail)
 {
-  PetscTruth flg;
+  PetscBool flg;
   PetscOptionsGetInt(PETSC_NULL,strCmdVar,ptCmdVar,&flg);
   if (!flg) 
     { 
       char myerrmsg[100];
       sprintf(myerrmsg,"Please indicate %s with -%s option",strCmdVarDetail, strCmdVar);
-      SETERRQ(PETSC_ERR_ARG_WRONG,myerrmsg);
+      SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_ARG_WRONG,myerrmsg);
     }
   else
     {PetscPrintf(PETSC_COMM_WORLD,"%s is %d \n",strCmdVarDetail,*ptCmdVar);}

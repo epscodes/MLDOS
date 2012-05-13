@@ -5,7 +5,7 @@ include ${PETSC_DIR}/conf/rules
 CLEANFILES = MLDOSOpt mldos.o 
 
 MLDOSOpt: mldos.o 
-	$(CLINKER) mldos.o -o MLDOSOpt $(PETSC_LIB) ${CavityLibPath}/libcavity.a ${NloptLibPath}/libnlopt.a 
+	$(CLINKER) mldos.o -o MLDOSOpt ${NloptLibPath}/libnlopt.a ${CavityLibPath}/libcavity.a $(PETSC_LIB)
 
 mldos: mldos.o
 	$(CLINKER) -Wall -g -o $@ mldos.o 

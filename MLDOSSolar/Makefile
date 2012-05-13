@@ -6,7 +6,7 @@ include ${PETSC_DIR}/conf/rules
 CLEANFILES = MLDOSSolarOpt mldossolar.o 
 
 MLDOSSolarOpt: mldossolar.o 
-	$(CLINKER) mldossolar.o -o MLDOSSolarOpt $(PETSC_LIB) ${CavityLibPath}/libcavity.a ${NloptLibPath}/libnlopt.a 
+	$(CLINKER) mldossolar.o -o MLDOSSolarOpt ${NloptLibPath}/libnlopt.a   ${CavityLibPath}/libcavity.a $(PETSC_LIB)
 
 mldossolar: mldossolar.o
 	$(CLINKER) -Wall -g -o $@ mldossolar.o 

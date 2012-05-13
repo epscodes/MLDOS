@@ -57,8 +57,13 @@ PetscErrorCode ImagIMat(MPI_Comm comm, Mat *Dout, int N)
   int ns, ne;  
   int i;
      
-  ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, N,N,nz, NULL, nz, NULL, &D); CHKERRQ(ierr); // here N is total length;
-      
+  //ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, N,N,nz, NULL, nz, NULL, &D); CHKERRQ(ierr); // here N is total length;
+  
+  MatCreate(comm, &D);
+  MatSetType(D,MATMPIAIJ);
+  MatSetSizes(D,PETSC_DECIDE, PETSC_DECIDE,N,N);
+  MatMPIAIJSetPreallocation(D, nz, PETSC_NULL, nz, PETSC_NULL);
+
   ierr = MatGetOwnershipRange(D, &ns, &ne); CHKERRQ(ierr);
 
   for (i = ns; i < ne; ++i) {
@@ -88,8 +93,13 @@ PetscErrorCode CongMat(MPI_Comm comm, Mat *Cout, int N)
   int ns, ne;  
   int i;
      
-  ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, N,N,nz, NULL, nz, NULL, &C); CHKERRQ(ierr);
-     
+  //ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, N,N,nz, NULL, nz, NULL, &C); CHKERRQ(ierr);
+  
+  MatCreate(comm, &C);
+  MatSetType(C,MATMPIAIJ);
+  MatSetSizes(C,PETSC_DECIDE, PETSC_DECIDE, N, N);
+  MatMPIAIJSetPreallocation(C, nz, PETSC_NULL, nz, PETSC_NULL);
+
   ierr = MatGetOwnershipRange(C, &ns, &ne); CHKERRQ(ierr);
 
   for (i = ns; i < ne; ++i) {
@@ -227,7 +237,7 @@ PetscErrorCode VecToArray(Vec V, double *pt, VecScatter scatter, IS from, IS to,
     ierr =VecScatterCreate(V,from,Vlocal,to,&scatter); CHKERRQ(ierr);
     VecScatterBegin(scatter,V,Vlocal,INSERT_VALUES,SCATTER_FORWARD);
    VecScatterEnd(scatter,V,Vlocal,INSERT_VALUES,SCATTER_FORWARD);
-   ierr =VecScatterDestroy(scatter); CHKERRQ(ierr);
+   ierr =VecScatterDestroy(&scatter); CHKERRQ(ierr);
 
    // copy from vgradlocal to grad;
    double *ptVlocal;
@@ -278,7 +288,13 @@ PetscErrorCode TMprojmat(MPI_Comm comm, Mat *TMout, int Nxyz)
   int nnz = 1;
   PetscErrorCode ierr;
   int i, ns, ne;
-  ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, 2*Nxyz, 6*Nxyz, nnz, NULL, nnz, NULL, &TM); CHKERRQ(ierr);
+  //ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, 2*Nxyz, 6*Nxyz, nnz, NULL, nnz, NULL, &TM); CHKERRQ(ierr);
+
+  MatCreate(comm, &TM);
+  MatSetType(TM,MATMPIAIJ);
+  MatSetSizes(TM,PETSC_DECIDE, PETSC_DECIDE, 2*Nxyz, 6*Nxyz);
+  MatMPIAIJSetPreallocation(TM, nnz, PETSC_NULL, nnz, PETSC_NULL);
+
 
   ierr = MatGetOwnershipRange(TM, &ns, &ne); CHKERRQ(ierr);
 
@@ -346,7 +362,7 @@ PetscErrorCode MatSetTwoDiagonals(Mat M, Vec epsC, Mat D, double sign)
   ierr = VecRestoreArray(epsCi, &ci); CHKERRQ(ierr);
   
  /* Destroy Vectors */
-  ierr=VecDestroy(epsCi); CHKERRQ(ierr);
+  ierr=VecDestroy(&epsCi); CHKERRQ(ierr);
   
   PetscFunctionReturn(0);
 }

@@ -74,11 +74,11 @@ PetscErrorCode  OutputMat(MPI_Comm comm, Mat A, const char *filenameComm, const 
 
 PetscErrorCode RetrieveVecPoints(Vec x, int Npt, int *Pos, double *ptValues);
 
-PetscErrorCode MyCheckAndOutputInt(PetscTruth flg, int CmdVar, const char *strCmdVar, const char *strCmdVarDetail);
+PetscErrorCode MyCheckAndOutputInt(PetscBool flg, int CmdVar, const char *strCmdVar, const char *strCmdVarDetail);
 
-PetscErrorCode MyCheckAndOutputDouble(PetscTruth flg, double CmdVar, const char *strCmdVar, const char *strCmdVarDetail);
+PetscErrorCode MyCheckAndOutputDouble(PetscBool flg, double CmdVar, const char *strCmdVar, const char *strCmdVarDetail);
 
-PetscErrorCode MyCheckAndOutputChar(PetscTruth flg, char *CmdVar, const char *strCmdVar, const char *strCmdVarDetail);
+PetscErrorCode MyCheckAndOutputChar(PetscBool flg, char *CmdVar, const char *strCmdVar, const char *strCmdVarDetail);
 
 
 

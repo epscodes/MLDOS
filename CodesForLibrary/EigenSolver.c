@@ -90,7 +90,7 @@ PetscErrorCode EigenSolver(int Linear, int Eig, int maxeigit)
 	  ierr = VecNorm(xdiff,NORM_INFINITY,&norm);CHKERRQ(ierr);
 	  //ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
 	  ierr = PetscPrintf(PETSC_COMM_WORLD,"---Norm of error %A, Kryolv Iterations %D----\n ",norm,its);CHKERRQ(ierr);    
-	  ierr=VecDestroy(xdiff);CHKERRQ(ierr);
+	  ierr=VecDestroy(&xdiff);CHKERRQ(ierr);
           #endif
 
 	}
@@ -187,14 +187,14 @@ PetscErrorCode RayleighQuotient(Mat M, Vec diagB, Vec x, Vec b, Vec vR, Mat D, V
 
   PetscPrintf(PETSC_COMM_WORLD,"----The current eigenvalue is %.16e + 1i*%.16e---- at iteratiion %d \n", Rel, Iml, i);
 
-   VecDestroy(Ax);
-   VecDestroy(Bx);
-   VecDestroy(Rex);
-   VecDestroy(Imx);
-   VecDestroy(ReAx);
-   VecDestroy(ImAx);
-   VecDestroy(ReBx);
-   VecDestroy(ImBx);
+   VecDestroy(&Ax);
+   VecDestroy(&Bx);
+   VecDestroy(&Rex);
+   VecDestroy(&Imx);
+   VecDestroy(&ReAx);
+   VecDestroy(&ImAx);
+   VecDestroy(&ReBx);
+   VecDestroy(&ImBx);
 
 
    PetscFunctionReturn(0);

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <petsc.h>
+#include "Resonator.h"
 
 extern int Job;
 extern char filenameComm[PETSC_MAX_PATH_LEN];
@@ -49,10 +50,13 @@ PetscErrorCode myinterp(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, int Nx
 
   int Mxyz=Mx*My*((Mzslab==0)?Mz:1); 
  
-  ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE,
-			 Nx*Ny*Nz*6, Mxyz,
-			 nz, NULL, nz, NULL, &A); CHKERRQ(ierr);
-     
+  //ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, Nx*Ny*Nz*6, Mxyz, nz, NULL, nz, NULL, &A); CHKERRQ(ierr);
+  
+  MatCreate(comm, &A);
+  MatSetType(A,MATMPIAIJ);
+  MatSetSizes(A,PETSC_DECIDE, PETSC_DECIDE, 6*Nx*Ny*Nz, Mxyz);
+  MatMPIAIJSetPreallocation(A, nz, PETSC_NULL, nz, PETSC_NULL);
+
   ierr = MatGetOwnershipRange(A, &ns, &ne); CHKERRQ(ierr);
 
   for (i = ns; i < ne; ++i) {
@@ -117,7 +121,7 @@ PetscErrorCode EpsCombine(Mat D, Vec weight, Vec epspml, Vec epspmlQ, Vec epscoe
   ierr = MatMult(D,tmp,epscoef);
 
   // Destroy stuff;
-  ierr = VecDestroy(tmp); CHKERRQ(ierr);
+  ierr = VecDestroy(&tmp); CHKERRQ(ierr);
   
   PetscFunctionReturn(0);
 }
@@ -276,10 +280,13 @@ PetscErrorCode myinterpTM2D(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nxo, i
 
   int Mxy=Mx*My; 
  
-  ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE,
-			 Nx*Ny*2, Mxy,
-			 nz, NULL, nz, NULL, &ATM2D); CHKERRQ(ierr);
-     
+  //ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, Nx*Ny*2, Mxy, nz, NULL, nz, NULL, &ATM2D); CHKERRQ(ierr);
+
+  MatCreate(comm, &ATM2D);
+  MatSetType(ATM2D,MATMPIAIJ);
+  MatSetSizes(ATM2D,PETSC_DECIDE, PETSC_DECIDE, 2*Nx*Ny, Mxy);
+  MatMPIAIJSetPreallocation(ATM2D, nz, PETSC_NULL, nz, PETSC_NULL);
+   
   ierr = MatGetOwnershipRange(ATM2D, &ns, &ne); CHKERRQ(ierr);
 
   for (i = ns; i < ne; ++i) {

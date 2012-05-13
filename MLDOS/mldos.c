@@ -37,7 +37,7 @@ int main(int argc, char **argv)
   PetscPrintf(PETSC_COMM_WORLD,"--------Initializing------ \n");
   PetscErrorCode ierr;
 
-  PetscTruth flg;
+  PetscBool flg;
 
   int myrank;
   MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
@@ -185,7 +185,7 @@ int main(int argc, char **argv)
   muinv = (double *) malloc(sizeof(double)*6*Nxyz);
   int add=0;
   AddMuAbsorption(muinv,muinvpml,Qabs,add);
-  ierr = VecDestroy(muinvpml); CHKERRQ(ierr);  
+  ierr = VecDestroy(&muinvpml); CHKERRQ(ierr);  
 
   /*---------- Define PML eps vectors: epspml---------- */  
   Vec epspml; //epspmlQ, epscoef;
@@ -232,7 +232,7 @@ int main(int argc, char **argv)
   ierr = KSPSetType(ksp, KSPGMRES);CHKERRQ(ierr);
   ierr = KSPGetPC(ksp,&pc);CHKERRQ(ierr);
   ierr = PCSetType(pc,PCLU);CHKERRQ(ierr);
-  ierr = PCFactorSetMatSolverPackage(pc,MAT_SOLVER_PASTIX);CHKERRQ(ierr);
+  ierr = PCFactorSetMatSolverPackage(pc,MATSOLVERPASTIX);CHKERRQ(ierr);
   int maxkspit = 20;
   ierr = KSPSetTolerances(ksp,1e-14,PETSC_DEFAULT,PETSC_DEFAULT,maxkspit);CHKERRQ(ierr);
   ierr = KSPSetFromOptions(ksp);CHKERRQ(ierr);
@@ -470,33 +470,33 @@ int main(int argc, char **argv)
   free(epsopt);
   free(lb);
   free(ub);
-  ierr = VecDestroy(J); CHKERRQ(ierr);
-  ierr = VecDestroy(b); CHKERRQ(ierr);
-  ierr = VecDestroy(weight); CHKERRQ(ierr);
-  ierr = VecDestroy(weightedJ); CHKERRQ(ierr);
-  ierr = VecDestroy(vR); CHKERRQ(ierr);
-  ierr = VecDestroy(epspml); CHKERRQ(ierr);
-  ierr = VecDestroy(epspmlQ); CHKERRQ(ierr);
-  ierr = VecDestroy(epscoef); CHKERRQ(ierr);
-  ierr = VecDestroy(epsSReal); CHKERRQ(ierr);
-  ierr = VecDestroy(epsgrad); CHKERRQ(ierr);
-  ierr = VecDestroy(vgrad); CHKERRQ(ierr);  
-  ierr = VecDestroy(epsmedium); CHKERRQ(ierr);
-  ierr = VecDestroy(epsC); CHKERRQ(ierr);
-  ierr = VecDestroy(epsCi); CHKERRQ(ierr);
-  ierr = VecDestroy(epsP); CHKERRQ(ierr);
-  ierr = VecDestroy(x); CHKERRQ(ierr);
-  ierr = VecDestroy(vgradlocal);CHKERRQ(ierr);
-  ierr = VecDestroy(tmp); CHKERRQ(ierr);
-  ierr = VecDestroy(tmpa); CHKERRQ(ierr);
-  ierr = VecDestroy(tmpb); CHKERRQ(ierr);
-  ierr = MatDestroy(A); CHKERRQ(ierr);  
-  ierr = MatDestroy(D); CHKERRQ(ierr);
-  ierr = MatDestroy(M); CHKERRQ(ierr);  
-  ierr = KSPDestroy(ksp);CHKERRQ(ierr);
+  ierr = VecDestroy(&J); CHKERRQ(ierr);
+  ierr = VecDestroy(&b); CHKERRQ(ierr);
+  ierr = VecDestroy(&weight); CHKERRQ(ierr);
+  ierr = VecDestroy(&weightedJ); CHKERRQ(ierr);
+  ierr = VecDestroy(&vR); CHKERRQ(ierr);
+  ierr = VecDestroy(&epspml); CHKERRQ(ierr);
+  ierr = VecDestroy(&epspmlQ); CHKERRQ(ierr);
+  ierr = VecDestroy(&epscoef); CHKERRQ(ierr);
+  ierr = VecDestroy(&epsSReal); CHKERRQ(ierr);
+  ierr = VecDestroy(&epsgrad); CHKERRQ(ierr);
+  ierr = VecDestroy(&vgrad); CHKERRQ(ierr);  
+  ierr = VecDestroy(&epsmedium); CHKERRQ(ierr);
+  ierr = VecDestroy(&epsC); CHKERRQ(ierr);
+  ierr = VecDestroy(&epsCi); CHKERRQ(ierr);
+  ierr = VecDestroy(&epsP); CHKERRQ(ierr);
+  ierr = VecDestroy(&x); CHKERRQ(ierr);
+  ierr = VecDestroy(&vgradlocal);CHKERRQ(ierr);
+  ierr = VecDestroy(&tmp); CHKERRQ(ierr);
+  ierr = VecDestroy(&tmpa); CHKERRQ(ierr);
+  ierr = VecDestroy(&tmpb); CHKERRQ(ierr);
+  ierr = MatDestroy(&A); CHKERRQ(ierr);  
+  ierr = MatDestroy(&D); CHKERRQ(ierr);
+  ierr = MatDestroy(&M); CHKERRQ(ierr);  
+  ierr = KSPDestroy(&ksp);CHKERRQ(ierr);
 
-  ISDestroy(from);
-  ISDestroy(to);
+  ISDestroy(&from);
+  ISDestroy(&to);
 
   /*------------ finalize the program -------------*/
 

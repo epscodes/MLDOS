@@ -45,7 +45,7 @@ int main(int argc, char **argv)
   PetscInitialize(&argc, &argv, PETSC_NULL, PETSC_NULL);
   PetscPrintf(PETSC_COMM_WORLD,"--------Initializing------ \n");
   PetscErrorCode ierr;
-  PetscTruth flg;
+  PetscBool flg;
   
   /*-------------------------------------------------*/
   int Mx,My,Mz,Mzslab, Npmlx,Npmly,Npmlz, Mxyz;
@@ -170,7 +170,7 @@ PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(
   muinv = (double *) malloc(sizeof(double)*6*Nxyz);
   int add=0;
   AddMuAbsorption(muinv,muinvpml,Qabs,add);
-  ierr = VecDestroy(muinvpml); CHKERRQ(ierr);  
+  ierr = VecDestroy(&muinvpml); CHKERRQ(ierr);  
 
   /*---------- Define PML eps vectors: epspml---------- */  
   Vec epspml;
@@ -351,26 +351,26 @@ PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(
   free(lb);
   free(ub);
   free(muinv);
-  ierr = VecDestroy(weight); CHKERRQ(ierr);
-  ierr = VecDestroy(vR); CHKERRQ(ierr);
-  ierr = VecDestroy(epspml); CHKERRQ(ierr);
-  ierr = VecDestroy(epspmlQ); CHKERRQ(ierr);
-  ierr = VecDestroy(epscoef); CHKERRQ(ierr);
-  ierr = VecDestroy(epsmedium); CHKERRQ(ierr);
-  ierr = MatDestroy(A); CHKERRQ(ierr);  
-  ierr = MatDestroy(D); CHKERRQ(ierr);
+  ierr = VecDestroy(&weight); CHKERRQ(ierr);
+  ierr = VecDestroy(&vR); CHKERRQ(ierr);
+  ierr = VecDestroy(&epspml); CHKERRQ(ierr);
+  ierr = VecDestroy(&epspmlQ); CHKERRQ(ierr);
+  ierr = VecDestroy(&epscoef); CHKERRQ(ierr);
+  ierr = VecDestroy(&epsmedium); CHKERRQ(ierr);
+  ierr = MatDestroy(&A); CHKERRQ(ierr);  
+  ierr = MatDestroy(&D); CHKERRQ(ierr);
 
-  ISDestroy(from);
-  ISDestroy(to);
+  ISDestroy(&from);
+  ISDestroy(&to);
  
   if (TMID==1)
     {
-      ierr = VecDestroy(vR2D); CHKERRQ(ierr);
-      ierr = VecDestroy(epspmlQ2D); CHKERRQ(ierr);
-      ierr = VecDestroy(epscoef2D); CHKERRQ(ierr);
-      ierr = VecDestroy(epsmedium2D); CHKERRQ(ierr);
-      ierr = MatDestroy(D2D); CHKERRQ(ierr);
-      ierr = MatDestroy(TMSixToTwo); CHKERRQ(ierr);
+      ierr = VecDestroy(&vR2D); CHKERRQ(ierr);
+      ierr = VecDestroy(&epspmlQ2D); CHKERRQ(ierr);
+      ierr = VecDestroy(&epscoef2D); CHKERRQ(ierr);
+      ierr = VecDestroy(&epsmedium2D); CHKERRQ(ierr);
+      ierr = MatDestroy(&D2D); CHKERRQ(ierr);
+      ierr = MatDestroy(&TMSixToTwo); CHKERRQ(ierr);
     }
 
 
