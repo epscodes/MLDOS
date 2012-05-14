@@ -30,7 +30,7 @@ PetscErrorCode EigenSolver(int Linear, int Eig, int maxeigit)
       ierr = KSPSetOperators(ksp,M,M,SAME_NONZERO_PATTERN);CHKERRQ(ierr);
       ierr = KSPSolve(ksp,b,x);CHKERRQ(ierr);
       ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations for linear solver is %D----\n ",its);CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations for linear solver is %d----\n ",its);CHKERRQ(ierr);
       
       ierr = PetscGetTime(&t2);CHKERRQ(ierr);
       tpast = t2 - t1;
@@ -69,7 +69,7 @@ PetscErrorCode EigenSolver(int Linear, int Eig, int maxeigit)
 	  CmpVecProd(diagB,epsC,b,D,aconj,tmpa,tmpb); // b=B*b;
 	  ierr = KSPSolve(ksp,b,x);CHKERRQ(ierr);
 	  ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
-	  ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations in this step is %D----\n ",its);CHKERRQ(ierr);
+	  ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations in this step is %d----\n ",its);CHKERRQ(ierr);
 	}
       else
 	{
@@ -78,7 +78,7 @@ PetscErrorCode EigenSolver(int Linear, int Eig, int maxeigit)
 	  KSPSetOperators(ksp,M,M,SAME_PRECONDITIONER);CHKERRQ(ierr);
 	  ierr = KSPSolve(ksp,b,x);CHKERRQ(ierr);
 	  ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
-	  ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations in this step is %D----\n ",its);CHKERRQ(ierr);
+	  ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations in this step is %d----\n ",its);CHKERRQ(ierr);
 
 
            #if 1
@@ -89,7 +89,7 @@ PetscErrorCode EigenSolver(int Linear, int Eig, int maxeigit)
 	  ierr = VecAXPY(xdiff,-1.0,b);CHKERRQ(ierr);
 	  ierr = VecNorm(xdiff,NORM_INFINITY,&norm);CHKERRQ(ierr);
 	  //ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
-	  ierr = PetscPrintf(PETSC_COMM_WORLD,"---Norm of error %A, Kryolv Iterations %D----\n ",norm,its);CHKERRQ(ierr);    
+	  ierr = PetscPrintf(PETSC_COMM_WORLD,"---Norm of error %g, Kryolv Iterations %d----\n ",norm,its);CHKERRQ(ierr);    
 	  ierr=VecDestroy(&xdiff);CHKERRQ(ierr);
           #endif
 

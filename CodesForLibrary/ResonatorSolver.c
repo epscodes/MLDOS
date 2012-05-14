@@ -85,7 +85,7 @@ double ResonatorSolver(int Mxyz,double *epsopt, double *grad, void *data)
   ierr = VecAXPY(xdiff,-1.0,b);CHKERRQ(ierr);
   ierr = VecNorm(xdiff,NORM_INFINITY,&norm);CHKERRQ(ierr);
   //ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"---Norm of error %A, Kryolv Iterations %D----\n ",norm,its);CHKERRQ(ierr);    
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"---Norm of error %g, Kryolv Iterations %d----\n ",norm,its);CHKERRQ(ierr);    
   ierr=VecDestroy(&xdiff);CHKERRQ(ierr);
 #endif
 
@@ -106,11 +106,11 @@ double ResonatorSolver(int Mxyz,double *epsopt, double *grad, void *data)
   ldos = -1.0*ldos*hxyz;
   if(minapproach)
     {
-      PetscPrintf(PETSC_COMM_WORLD,"---The current ldos (minapp) at step %d is %.16e \n", count,ldos);
+      PetscPrintf(PETSC_COMM_WORLD,"---The current ldos (minapp) at step %.5d is %.16e \n", count,ldos);
       ldos = 1.0/ldos;
     }
   else
-    PetscPrintf(PETSC_COMM_WORLD,"---The current ldos at step %d is %.16e \n", count,ldos);
+    PetscPrintf(PETSC_COMM_WORLD,"---The current ldos at step %.5d is %.16e \n", count,ldos);
 
   PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------- \n");
 
