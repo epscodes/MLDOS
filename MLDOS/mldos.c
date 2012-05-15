@@ -26,6 +26,12 @@ VecScatter scatter;
 double ldoscenter, omegacur=0;
 // for maximize ldos or mimimize 1/ldos apporach;
 int minapproach;
+// for include eps(0,0,0) in the definition of ldos;
+int withepsinldos;
+Vec pickposvec;
+// for output structure every outputbase
+int outputbase;
+double epsair;
 /*------------------------------------------------------*/
 
 #undef __FUNCT__ 
@@ -74,7 +80,7 @@ int main(int argc, char **argv)
   PetscOptionsGetInt(PETSC_NULL,"-bzu",bz+1,&flg);  MyCheckAndOutputInt(flg,bz[1],"bzu","BC at z upper");
 
 
-  double epsair, epssub, RRT, sigmax, sigmay, sigmaz ;
+  double  epssub, RRT, sigmax, sigmay, sigmaz ;
    
   PetscOptionsGetReal(PETSC_NULL,"-hx",&hx,&flg);  MyCheckAndOutputDouble(flg,hx,"hx","hx");
   hy = hx;
@@ -129,7 +135,12 @@ int main(int argc, char **argv)
 
   // Get minapproach;
   PetscOptionsGetInt(PETSC_NULL,"-minapproach",&minapproach,&flg);  MyCheckAndOutputInt(flg,minapproach,"minapproach","minapproach");
-
+   
+  // Get withepsinldos;
+  PetscOptionsGetInt(PETSC_NULL,"-withepsinldos",&withepsinldos,&flg);  MyCheckAndOutputInt(flg,withepsinldos,"withepsinldos","withepsinldos");
+  
+  // Get outputbase;
+  PetscOptionsGetInt(PETSC_NULL,"-outputbase",&outputbase,&flg);  MyCheckAndOutputInt(flg,outputbase,"outputbase","outputbase");
   /*--------------------------------------------------------*/
 
   /*--------------------------------------------------------*/
@@ -261,6 +272,14 @@ int main(int argc, char **argv)
   ierr = VecDuplicate(J,&tmpa); CHKERRQ(ierr);
   ierr = VecDuplicate(J,&tmpb); CHKERRQ(ierr);
  
+  // Vec pickposvec; this vector is zero except that first entry is one;
+  if (withepsinldos)
+    { ierr = VecDuplicate(J,&pickposvec); CHKERRQ(ierr);
+      ierr = VecSet(pickposvec,0.0); CHKERRQ(ierr);
+      ierr = VecSetValue(pickposvec,0,1.0,INSERT_VALUES);
+      VecAssemblyBegin(pickposvec);
+      VecAssemblyEnd(pickposvec);
+    }
   /*------------ Create scatter used in the solver -----------*/
   //VecScatter scatter;
   //IS from, to;
@@ -442,7 +461,7 @@ int main(int argc, char **argv)
       if(Job==1)
 	{ //OutputVec(PETSC_COMM_WORLD, epsopt,filenameComm, "epsopt.m");
 	  //OutputVec(PETSC_COMM_WORLD, epsSReal,filenameComm, "epsSReal.m");
-
+	  
 	  int rankA;
 	  MPI_Comm_rank(PETSC_COMM_WORLD, &rankA);
 
@@ -497,6 +516,9 @@ int main(int argc, char **argv)
 
   ISDestroy(&from);
   ISDestroy(&to);
+
+  if (withepsinldos)
+    {ierr=VecDestroy(&pickposvec); CHKERRQ(ierr);}
 
   /*------------ finalize the program -------------*/
 

@@ -23,6 +23,10 @@ extern VecScatter scatter;
 
 /*global variable for min or max approach */
 extern int minapproach;
+extern int withepsinldos;
+extern Vec pickposvec;
+extern int outputbase;
+extern double epsair;
 
 #undef __FUNCT__ 
 #define __FUNCT__ "ResonatorSolver"
@@ -101,9 +105,15 @@ double ResonatorSolver(int Mxyz,double *epsopt, double *grad, void *data)
 #endif   
 
 
-  double ldos; //ldos = -Re((weight.*J)'*E) or -Re(E'*(weight*J));
-  ierr = VecDot(x,weightedJ,&ldos);
-  ldos = -1.0*ldos*hxyz;
+  double ldos, tmpldos; //tmpldos = -Re((weight.*J)'*E) or -Re(E'*(weight*J));
+  ierr = VecDot(x,weightedJ,&tmpldos);
+  tmpldos = -1.0*tmpldos;
+
+  if(withepsinldos)
+    ldos = tmpldos*(epsopt[0]+epsair)*hxyz;
+  else
+    ldos = tmpldos*hxyz;
+
   if(minapproach)
     {
       PetscPrintf(PETSC_COMM_WORLD,"---The current ldos (minapp) at step %.5d is %.16e \n", count,ldos);
@@ -119,7 +129,7 @@ double ResonatorSolver(int Mxyz,double *epsopt, double *grad, void *data)
   char buffer [100];
 
   int STORE=1;    
- if(STORE==1)
+  if(STORE==1 && (count%outputbase==0))
     {
       sprintf(buffer,"%.5depsSReal.m",count);
       OutputVec(PETSC_COMM_WORLD, epsSReal, filenameComm, buffer);          }
@@ -144,7 +154,14 @@ double ResonatorSolver(int Mxyz,double *epsopt, double *grad, void *data)
    /* Adjoint-Method tells us Mtran*lambba =J -> x = i*omega/weight*conj(lambda);  therefore the derivative is Re(x^2*weight*i*omega*(1+i/Qabs)*epspml) = Re(x^2*epscoef) ; here, I omit two minus signs: one is M'*lam= -j; the other is -Re(***). minus minus is a plus.*/
    int aconj=0;
    CmpVecProd(x,epscoef,tmp,D,aconj,tmpa,tmpb);
-   CmpVecProd(x,tmp,epsgrad,D,aconj,tmpa,tmpb);   
+   CmpVecProd(x,tmp,epsgrad,D,aconj,tmpa,tmpb);
+
+   if (withepsinldos) //epsgrad = epscenter*olddev + ldos(only first component;
+     {  
+       VecScale(epsgrad,epsopt[0]+epsair);
+       VecAXPY(epsgrad,tmpldos,pickposvec);
+     }
+      
    if (minapproach)
      VecScale(epsgrad,-ldos*ldos*hxyz);
    else
