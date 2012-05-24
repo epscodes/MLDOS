@@ -59,7 +59,7 @@ double ldos(int numofvar,double *varopt, double *grad, void *data)
     {ierr = KSPSetOperators(ksp,M,M,SAME_PRECONDITIONER);CHKERRQ(ierr);}
    ierr = KSPSolve(ksp,b,x);CHKERRQ(ierr);
    ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
-   ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations in this step is %D----\n ",its);CHKERRQ(ierr);
+   ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations in this step is %d----\n ",its);CHKERRQ(ierr);
 #endif
 
    // if GMRES is stopped due to maxit, then redo it with sparse direct solve;
@@ -72,7 +72,7 @@ double ldos(int numofvar,double *varopt, double *grad, void *data)
 	ierr = KSPSetOperators(ksp,M,M,SAME_NONZERO_PATTERN);CHKERRQ(ierr);
 	ierr = KSPSolve(ksp,b,x);CHKERRQ(ierr);
 	ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations in this step is %D----\n ",its);CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations in this step is %d----\n ",its);CHKERRQ(ierr);
      }
   }
 #endif
@@ -87,7 +87,7 @@ double ldos(int numofvar,double *varopt, double *grad, void *data)
   ierr = VecAXPY(xdiff,-1.0,b);CHKERRQ(ierr);
   ierr = VecNorm(xdiff,NORM_INFINITY,&norm);CHKERRQ(ierr);
   //ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
-  ierr = PetscPrintf(PETSC_COMM_WORLD,"---Norm of error %A, Kryolv Iterations %D----\n ",norm,its);CHKERRQ(ierr);    
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"---Norm of error %g, Kryolv Iterations %d----\n ",norm,its);CHKERRQ(ierr);    
   ierr=VecDestroy(&xdiff);CHKERRQ(ierr);
 #endif
 
