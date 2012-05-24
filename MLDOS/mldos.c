@@ -216,7 +216,7 @@ int main(int argc, char **argv)
 
   //Mat A; 
   //new routine for myinterp;
-  myinterp(PETSC_COMM_WORLD, &A, Nx,Ny,Nz, LowerPML*Npmlx,LowerPML*Npmly,LowerPML*Npmlz, Mx,My,Mz,Mzslab); // LoweerPML*Npmlx,..,.., specify where the interp starts;  
+  myinterp(PETSC_COMM_WORLD, &A, Nx,Ny,Nz, LowerPML*floor((Nx-Mx)/2),LowerPML*floor((Ny-My)/2),LowerPML*floor((Nz-Mz)/2), Mx,My,Mz,Mzslab); // LoweerPML*Npmlx,..,.., specify where the interp starts;  
 
   //Vec epsSReal, epsgrad, vgrad; // create compatiable vectors with A.
   ierr = MatGetVecs(A,&epsSReal, &epsgrad); CHKERRQ(ierr);  
