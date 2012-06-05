@@ -9,6 +9,7 @@ extern Vec epspmlQ, epsmedium, epsC, epsCi, epsP, x, b, weightedJ, vR, epsSReal,
 extern Mat A, D, M;
 extern KSP ksp;
 extern char filenameComm[PETSC_MAX_PATH_LEN];
+extern int cavityverbose;
 
 #undef __FUNCT__ 
 #define __FUNCT__ "EigenSolver"
@@ -102,6 +103,13 @@ PetscErrorCode EigenSolver(int Linear, int Eig, int maxeigit)
       if(rank==0)
 	PetscPrintf(PETSC_COMM_SELF,"---The runing time is %f s \n",tpast);
     
+      if(cavityverbose)
+	{
+	  char buffer[100];
+	  sprintf(buffer, "eigstep%.3d.m",i);
+	  OutputVec(PETSC_COMM_WORLD, x,filenameComm, buffer);
+	}
+	 
     }
     }
 

@@ -32,6 +32,8 @@ Vec pickposvec;
 // for output structure every outputbase
 int outputbase;
 double epsair;
+// for slective output
+int cavityverbose;
 /*------------------------------------------------------*/
 
 #undef __FUNCT__ 
@@ -51,7 +53,7 @@ int main(int argc, char **argv)
     mma_verbose=1;
     
   /*-------------------------------------------------*/
-  int Mx,My,Mz,Mzslab, Npmlx,Npmly,Npmlz,Mxyz;
+  int Mx,My,Mz,Mzslab, Npmlx,Npmly,Npmlz,DegFree, anisotropic;
 
   PetscOptionsGetInt(PETSC_NULL,"-Nx",&Nx,&flg);  MyCheckAndOutputInt(flg,Nx,"Nx","Nx");
   PetscOptionsGetInt(PETSC_NULL,"-Ny",&Ny,&flg);  MyCheckAndOutputInt(flg,Ny,"Ny","Nx");
@@ -65,7 +67,13 @@ int main(int argc, char **argv)
   PetscOptionsGetInt(PETSC_NULL,"-Npmlz",&Npmlz,&flg);  MyCheckAndOutputInt(flg,Npmlz,"Npmlz","Npmlz");
 
   Nxyz = Nx*Ny*Nz;
-  Mxyz = Mx*My*((Mzslab==0)?Mz:1);
+
+  // if anisotropic !=0, Degree of Freedom = 3*Mx*My*Mz; else DegFree = Mx*My*Mz;
+  PetscOptionsGetInt(PETSC_NULL,"-anisotropic",&anisotropic,&flg);
+  if(!flg) anisotropic = 0; // by default, it is isotropc.
+  DegFree = (anisotropic ? 3 : 1 )*Mx*My*((Mzslab==0)?Mz:1); 
+  PetscPrintf(PETSC_COMM_WORLD," the Degree of Freedoms is %d \n ", DegFree);
+  
 
   int BCPeriod, Jdirection, LowerPML;
   int bx[2], by[2], bz[2];
@@ -141,6 +149,10 @@ int main(int argc, char **argv)
   
   // Get outputbase;
   PetscOptionsGetInt(PETSC_NULL,"-outputbase",&outputbase,&flg);  MyCheckAndOutputInt(flg,outputbase,"outputbase","outputbase");
+  // Get cavityverbose;
+  PetscOptionsGetInt(PETSC_NULL,"-cavityverbose",&cavityverbose,&flg);
+  if(!flg) cavityverbose=0;
+  PetscPrintf(PETSC_COMM_WORLD,"the cavity verbose is set as %d \n", cavityverbose); 
   /*--------------------------------------------------------*/
 
   /*--------------------------------------------------------*/
@@ -216,7 +228,7 @@ int main(int argc, char **argv)
 
   //Mat A; 
   //new routine for myinterp;
-  myinterp(PETSC_COMM_WORLD, &A, Nx,Ny,Nz, LowerPML*floor((Nx-Mx)/2),LowerPML*floor((Ny-My)/2),LowerPML*floor((Nz-Mz)/2), Mx,My,Mz,Mzslab); // LoweerPML*Npmlx,..,.., specify where the interp starts;  
+  myinterp(PETSC_COMM_WORLD, &A, Nx,Ny,Nz, LowerPML*floor((Nx-Mx)/2),LowerPML*floor((Ny-My)/2),LowerPML*floor((Nz-Mz)/2), Mx,My,Mz,Mzslab, anisotropic); // LoweerPML*Npmlx,..,.., specify where the interp starts;  
 
   //Vec epsSReal, epsgrad, vgrad; // create compatiable vectors with A.
   ierr = MatGetVecs(A,&epsSReal, &epsgrad); CHKERRQ(ierr);  
@@ -267,7 +279,7 @@ int main(int argc, char **argv)
 
   /*------------ Create space used in the solver ------------*/
   //Vec vgradlocal,tmp, tmpa,tmpb;
-  ierr = VecCreateSeq(PETSC_COMM_SELF, Mxyz, &vgradlocal); CHKERRQ(ierr);
+  ierr = VecCreateSeq(PETSC_COMM_SELF, DegFree, &vgradlocal); CHKERRQ(ierr);
   ierr = VecDuplicate(J,&tmp); CHKERRQ(ierr);
   ierr = VecDuplicate(J,&tmpa); CHKERRQ(ierr);
   ierr = VecDuplicate(J,&tmpb); CHKERRQ(ierr);
@@ -283,13 +295,13 @@ int main(int argc, char **argv)
   /*------------ Create scatter used in the solver -----------*/
   //VecScatter scatter;
   //IS from, to;
-  ierr =ISCreateStride(PETSC_COMM_SELF,Mxyz,0,1,&from); CHKERRQ(ierr);
-  ierr =ISCreateStride(PETSC_COMM_SELF,Mxyz,0,1,&to); CHKERRQ(ierr);
+  ierr =ISCreateStride(PETSC_COMM_SELF,DegFree,0,1,&from); CHKERRQ(ierr);
+  ierr =ISCreateStride(PETSC_COMM_SELF,DegFree,0,1,&to); CHKERRQ(ierr);
 
   /*-------------Read the input file -------------------------*/
 
   double *epsopt;
-  epsopt = (double *) malloc(Mxyz*sizeof(double));
+  epsopt = (double *) malloc(DegFree*sizeof(double));
 
   FILE *ptf;
   ptf = fopen(initialdata,"r");
@@ -298,7 +310,7 @@ int main(int argc, char **argv)
   int i;
   // set the dielectric at the center is fixed, and alwyas high
   //epsopt[0]=myub; is defined below near lb and ub;
-  for (i=0;i<Mxyz;i++)
+  for (i=0;i<DegFree;i++)
     { //PetscPrintf(PETSC_COMM_WORLD,"current eps reading is %lf \n",epsopt[i]);
       fscanf(ptf,"%lf",&epsopt[i]);
     }
@@ -321,7 +333,7 @@ int main(int argc, char **argv)
   //int Job; set Job to be gloabl variables;
   PetscOptionsGetInt(PETSC_NULL,"-Job",&Job,&flg);  MyCheckAndOutputInt(flg,Job,"Job","The Job indicator you set");
   
-  int numofvar=(Job==1)*Mxyz + (Job==3);
+  int numofvar=(Job==1)*DegFree + (Job==3);
 
   /*--------   convert the epsopt array to epsSReal (if job!=optmization) --------*/
   if (Job==2 || Job ==3)
@@ -468,7 +480,7 @@ int main(int argc, char **argv)
 	  if(rankA==0)
 	    {
 	      ptf = fopen(strcat(filenameComm,"epsopt.txt"),"w");
-	      for (i=0;i<Mxyz;i++)
+	      for (i=0;i<DegFree;i++)
 		fprintf(ptf,"%0.16e \n",epsopt[i]);
 	      fclose(ptf);
 	    }  

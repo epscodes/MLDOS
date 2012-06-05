@@ -36,7 +36,7 @@ PetscErrorCode ModifyMatDiagonalsForOmega( Mat M, Mat A, Mat D, Vec epsSReal, Ve
 
 //PetscErrorCode  yee_interp(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, double x0, double y0, double z0, double x1, double y1, double z1, int Mx, int My, int Mz);
 
-PetscErrorCode  myinterp(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, int Nxo, int Nyo, int Nzo, int Mx, int My, int Mz, int Mzslab);
+PetscErrorCode  myinterp(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, int Nxo, int Nyo, int Nzo, int Mx, int My, int Mz, int Mzslab, int anisotropic);
 
 //PetscErrorCode myinterpSlab(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, int Nxo, int Nyo, int Nzo, int Mx, int My, int Mz, int Mzslab);
 
@@ -59,7 +59,7 @@ PetscErrorCode  GetRealPartVec(Vec vR, int N);
 
 PetscErrorCode  ArrayToVec(double *pt, Vec V);
 
-PetscErrorCode VecToArray(Vec V, double *pt, VecScatter scatter, IS from, IS to, Vec Vlocal, int Mxyz);
+PetscErrorCode VecToArray(Vec V, double *pt, VecScatter scatter, IS from, IS to, Vec Vlocal, int DegFree);
 
 PetscErrorCode AddMuAbsorption(double *muinv, Vec muinvpml, double Qabs, int add);
 
@@ -86,7 +86,7 @@ PetscErrorCode GetIntParaCmdLine(int *ptCmdVar, const char *strCmdVar, const cha
 
 
 // from ResonatorSolver.c
-double ResonatorSolver(int Mxyz, double *epsopt, double *grad, void *data);
+double ResonatorSolver(int DegFree, double *epsopt, double *grad, void *data);
 
 // from ldos.c
 double ldos(int numofvar, double *epsopt, double *grad, void *data);

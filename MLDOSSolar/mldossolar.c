@@ -203,7 +203,7 @@ PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(
   if (TMID==1)
     myinterpTM2D(comm_group, &A, Nx,Ny,LowerPML*Npmlx,LowerPML*Npmly, Mx,My);
   else
-    myinterp(comm_group, &A, Nx,Ny,Nz, LowerPML*Npmlx,LowerPML*Npmly,LowerPML*Npmlz, Mx,My,Mz,Mzslab); // LoweerPML*Npmlx,..,.., specify where the interp starts;    
+    myinterp(comm_group, &A, Nx,Ny,Nz, LowerPML*Npmlx,LowerPML*Npmly,LowerPML*Npmlz, Mx,My,Mz,Mzslab, 0); // LoweerPML*Npmlx,..,.., specify where the interp starts; 0 for isotropic;   
  
   /*---------Create scatter used in the solver-------------*/
  

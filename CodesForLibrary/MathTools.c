@@ -229,7 +229,7 @@ PetscErrorCode  ArrayToVec(double *pt, Vec V)
 }
 
 
-PetscErrorCode VecToArray(Vec V, double *pt, VecScatter scatter, IS from, IS to, Vec Vlocal, int Mxyz)
+PetscErrorCode VecToArray(Vec V, double *pt, VecScatter scatter, IS from, IS to, Vec Vlocal, int DegFree)
 {
   PetscErrorCode ierr;
 
@@ -244,7 +244,7 @@ PetscErrorCode VecToArray(Vec V, double *pt, VecScatter scatter, IS from, IS to,
    ierr =VecGetArray(Vlocal,&ptVlocal);CHKERRQ(ierr);
 
    int i;
-   for(i=0;i<Mxyz;i++)
+   for(i=0;i<DegFree;i++)
      pt[i] = ptVlocal[i];
    ierr =VecRestoreArray(Vlocal,&ptVlocal);CHKERRQ(ierr);   
   PetscFunctionReturn(0);

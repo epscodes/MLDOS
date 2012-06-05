@@ -30,7 +30,7 @@ extern double epsair;
 
 #undef __FUNCT__ 
 #define __FUNCT__ "ResonatorSolver"
-double ResonatorSolver(int Mxyz,double *epsopt, double *grad, void *data)
+double ResonatorSolver(int DegFree,double *epsopt, double *grad, void *data)
 {
   
   PetscErrorCode ierr;
@@ -176,7 +176,7 @@ double ResonatorSolver(int Mxyz,double *epsopt, double *grad, void *data)
    ierr = MatMultTranspose(A,epsgrad,vgrad);CHKERRQ(ierr);   
 
 // copy vgrad (distributed vector) to a regular array grad;
-   ierr = VecToArray(vgrad,grad,scatter,from,to,vgradlocal,Mxyz);
+   ierr = VecToArray(vgrad,grad,scatter,from,to,vgradlocal,DegFree);
   }
 
   count++;

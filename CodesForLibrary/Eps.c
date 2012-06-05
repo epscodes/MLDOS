@@ -38,7 +38,7 @@ extern char filenameComm[PETSC_MAX_PATH_LEN];
 
 #undef __FUNCT__ 
 #define __FUNCT__ "myinterp"
-PetscErrorCode myinterp(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, int Nxo, int Nyo, int Nzo, int Mx, int My, int Mz, int Mzslab)
+PetscErrorCode myinterp(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, int Nxo, int Nyo, int Nzo, int Mx, int My, int Mz, int Mzslab, int anisotropic)
 {
   Mat A;
   int nz = 1; /* max # nonzero elements in each row */
@@ -48,13 +48,14 @@ PetscErrorCode myinterp(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, int Nx
   int i;
   int Nc = 3; //modified;
 
-  int Mxyz=Mx*My*((Mzslab==0)?Mz:1); 
+  int Mxyz =  Mx*My*((Mzslab==0)?Mz:1);  
+  int DegFree= (anisotropic ? 3 : 1)* Mxyz; 
  
   //ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, Nx*Ny*Nz*6, Mxyz, nz, NULL, nz, NULL, &A); CHKERRQ(ierr);
   
   MatCreate(comm, &A);
   MatSetType(A,MATMPIAIJ);
-  MatSetSizes(A,PETSC_DECIDE, PETSC_DECIDE, 6*Nx*Ny*Nz, Mxyz);
+  MatSetSizes(A,PETSC_DECIDE, PETSC_DECIDE, 6*Nx*Ny*Nz, DegFree);
   MatMPIAIJSetPreallocation(A, nz, PETSC_NULL, nz, PETSC_NULL);
 
   ierr = MatGetOwnershipRange(A, &ns, &ne); CHKERRQ(ierr);
@@ -88,7 +89,7 @@ PetscErrorCode myinterp(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, int Nx
       id = (ixd*My + iyd)*Mz + izd;
 	  
    
-    ierr = MatSetValue(A, i, id, 1.0, INSERT_VALUES); CHKERRQ(ierr);
+    ierr = MatSetValue(A, i, id + (anisotropic!=0)*ic*Mxyz, 1.0, INSERT_VALUES); CHKERRQ(ierr);
   }
 
   ierr = MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
