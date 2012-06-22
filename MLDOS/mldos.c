@@ -29,6 +29,7 @@ int minapproach;
 // for include eps(0,0,0) in the definition of ldos;
 int withepsinldos;
 Vec pickposvec;
+double epsatinterest;
 // for output structure every outputbase
 int outputbase;
 double epsair;
@@ -345,6 +346,9 @@ int main(int argc, char **argv)
       for(i=ns;i<ne;i++)
 	{ ierr=VecSetValue(epsSReal,i,epsopt[i],INSERT_VALUES); 
 	  CHKERRQ(ierr); }      
+      if(withepsinldos)
+	{ epsatinterest = epsopt[cx*Ny*Nz + cy*Nz + cz]  + epsair;
+	  PetscPrintf(PETSC_COMM_WORLD, " the relative permitivity at the point of current is %.16e \n ",epsatinterest);}
       ierr = VecAssemblyBegin(epsSReal); CHKERRQ(ierr);
       ierr = VecAssemblyEnd(epsSReal);  CHKERRQ(ierr);
     }

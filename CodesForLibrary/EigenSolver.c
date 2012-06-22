@@ -11,6 +11,9 @@ extern KSP ksp;
 extern char filenameComm[PETSC_MAX_PATH_LEN];
 extern int cavityverbose;
 
+extern int withepsinldos;
+extern double epsatinterest;
+
 #undef __FUNCT__ 
 #define __FUNCT__ "EigenSolver"
 PetscErrorCode EigenSolver(int Linear, int Eig, int maxeigit)
@@ -42,6 +45,8 @@ PetscErrorCode EigenSolver(int Linear, int Eig, int maxeigit)
       double ldos; //ldos = -Re((weight.*J)'*E) or -Re(E'*(weight*J));
   ierr = VecDot(x,weightedJ,&ldos);
   ldos = -1.0*ldos*hxyz;
+  if(withepsinldos)
+    ldos = ldos*epsatinterest;
   PetscPrintf(PETSC_COMM_WORLD,"---The los by linear solver is %.16e \n",ldos);
 
   /*output the vectors !!!!!!!!!!!!!!!!!!!!!!!!!!!*/
