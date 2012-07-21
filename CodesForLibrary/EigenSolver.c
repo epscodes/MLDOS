@@ -13,6 +13,7 @@ extern int cavityverbose;
 
 extern int withepsinldos;
 extern double epsatinterest;
+extern int refinedldos;
 
 #undef __FUNCT__ 
 #define __FUNCT__ "EigenSolver"
@@ -43,7 +44,20 @@ PetscErrorCode EigenSolver(int Linear, int Eig, int maxeigit)
       if(rank==0)
 	PetscPrintf(PETSC_COMM_SELF,"---The runing time is %f s \n",tpast);	  
       double ldos; //ldos = -Re((weight.*J)'*E) or -Re(E'*(weight*J));
-  ierr = VecDot(x,weightedJ,&ldos);
+   if (refinedldos)
+    {
+      double tmpldosreal, tmpldosimag;
+      VecDot(x,weightedJ, &tmpldosreal);
+      ierr = MatMult(D,x,tmp); CHKERRQ(ierr);
+      VecDot(tmp,weightedJ,&tmpldosimag);
+      tmpldosimag=-tmpldosimag;
+      ldos = tmpldosreal + pow(tmpldosimag,2)/tmpldosreal;
+      PetscPrintf(PETSC_COMM_WORLD,"real part is %.16e and imag part is %.16e;\n computed refined real is %.16e \n", tmpldosreal,tmpldosimag,ldos);
+    }
+  else
+    {ierr = VecDot(x,weightedJ,&ldos);}
+
+
   ldos = -1.0*ldos*hxyz;
   if(withepsinldos)
     ldos = ldos*epsatinterest;

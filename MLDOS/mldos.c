@@ -35,6 +35,8 @@ int outputbase;
 double epsair;
 // for slective output
 int cavityverbose;
+// for refined definition of LDOS to compare with Q/V
+int refinedldos;
 /*------------------------------------------------------*/
 
 #undef __FUNCT__ 
@@ -154,6 +156,10 @@ int main(int argc, char **argv)
   PetscOptionsGetInt(PETSC_NULL,"-cavityverbose",&cavityverbose,&flg);
   if(!flg) cavityverbose=0;
   PetscPrintf(PETSC_COMM_WORLD,"the cavity verbose is set as %d \n", cavityverbose); 
+  // Get refinedldos;
+  PetscOptionsGetInt(PETSC_NULL,"-refinedldos",&refinedldos,&flg);
+  if(!flg) refinedldos=0;
+  PetscPrintf(PETSC_COMM_WORLD,"the refinedldos is set as %d \n", refinedldos);
   /*--------------------------------------------------------*/
 
   /*--------------------------------------------------------*/
@@ -476,8 +482,8 @@ int main(int argc, char **argv)
 
       if(Job==1)
 	{ //OutputVec(PETSC_COMM_WORLD, epsopt,filenameComm, "epsopt.m");
-	  //OutputVec(PETSC_COMM_WORLD, epsSReal,filenameComm, "epsSReal.m");
-	  
+	  //OutputVec(PETSC_COMM_WORLD, epsgrad,filenameComm, "epsgrad.m");
+	  //OutputVec(PETSC_COMM_WORLD, vgrad,filenameComm, "vgrad.m"); 
 	  int rankA;
 	  MPI_Comm_rank(PETSC_COMM_WORLD, &rankA);
 

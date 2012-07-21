@@ -1,6 +1,7 @@
 #include <petsc.h>
 #include <time.h>
 #include "Resonator.h"
+#include <complex.h>
 
 extern int count;
 extern int its;
@@ -27,6 +28,7 @@ extern int withepsinldos;
 extern Vec pickposvec;
 extern int outputbase;
 extern double epsair;
+extern int refinedldos;
 
 #undef __FUNCT__ 
 #define __FUNCT__ "ResonatorSolver"
@@ -106,7 +108,21 @@ double ResonatorSolver(int DegFree,double *epsopt, double *grad, void *data)
 
 
   double ldos, tmpldos; //tmpldos = -Re((weight.*J)'*E) or -Re(E'*(weight*J));
-  ierr = VecDot(x,weightedJ,&tmpldos);
+  double complex ctmpldos;
+  if (refinedldos)
+    {
+      double tmpldosreal, tmpldosimag;
+      VecDot(x,weightedJ, &tmpldosreal);
+      ierr = MatMult(D,x,tmp); CHKERRQ(ierr);
+      VecDot(tmp,weightedJ,&tmpldosimag);
+      tmpldosimag=-tmpldosimag;
+      ctmpldos = (tmpldosreal + tmpldosimag*I);
+      tmpldos = 1.0/creal(1.0/ctmpldos);
+      PetscPrintf(PETSC_COMM_WORLD,"real part is %.16e and imag part is %.16e;\n computed refined real is %.16e \n", creal(ctmpldos),cimag(ctmpldos),tmpldos);
+    }
+  else
+    {ierr = VecDot(x,weightedJ,&tmpldos);}
+
   tmpldos = -1.0*tmpldos;
 
   if(withepsinldos)
@@ -118,6 +134,7 @@ double ResonatorSolver(int DegFree,double *epsopt, double *grad, void *data)
     {
       PetscPrintf(PETSC_COMM_WORLD,"---The current ldos (minapp) at step %.5d is %.16e \n", count,ldos);
       ldos = 1.0/ldos;
+      PetscPrintf(PETSC_COMM_WORLD,"---The current invldos (minapp) at step %.5d is %.16e \n", count,ldos);
     }
   else
     PetscPrintf(PETSC_COMM_WORLD,"---The current ldos at step %.5d is %.16e \n", count,ldos);
@@ -162,8 +179,14 @@ double ResonatorSolver(int DegFree,double *epsopt, double *grad, void *data)
        VecAXPY(epsgrad,tmpldos,pickposvec);
      }
       
-   if (minapproach)
+   if (minapproach && !refinedldos)
      VecScale(epsgrad,-ldos*ldos*hxyz);
+   else if (minapproach && refinedldos)
+     {
+       CmpVecScale(epsgrad,tmp, creal(cpow(1/(ctmpldos*hxyz),2)),cimag(cpow(1/(ctmpldos*hxyz),2)),D,tmpa);
+       VecCopy(tmp,epsgrad);
+       VecScale(epsgrad,-hxyz);
+     }
    else
      VecScale(epsgrad,hxyz);// the factor hxyz handle both 2D and 3D;
 

@@ -374,6 +374,6 @@ PetscErrorCode CmpVecScale(Vec vin, Vec vout, double a, double b, Mat D, Vec vin
 {
   PetscErrorCode ierr; 
   ierr=MatMult(D,vin,vini);CHKERRQ(ierr);
-  VecAXPBYPCZ(vout,a,b,1.0, vin,vini); 
+  VecAXPBYPCZ(vout,a,b,0.0, vin,vini); //bug fixed;
   PetscFunctionReturn(0);
 }
