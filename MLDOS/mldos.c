@@ -37,6 +37,8 @@ double epsair;
 int cavityverbose;
 // for refined definition of LDOS to compare with Q/V
 int refinedldos;
+// add posj for current location;
+int posj;
 /*------------------------------------------------------*/
 
 #undef __FUNCT__ 
@@ -141,6 +143,9 @@ int main(int argc, char **argv)
   else
     {PetscPrintf(PETSC_COMM_WORLD,"the current poisiont cz is %d \n",cz);}
     
+  posj = (cx*Ny+ cy)*Nz + cz;
+  PetscPrintf(PETSC_COMM_WORLD,"the posj is %d \n. ", posj);
+
   int fixpteps;
   PetscOptionsGetInt(PETSC_NULL,"-fixpteps",&fixpteps,&flg);  MyCheckAndOutputInt(flg,fixpteps,"fixpteps","fixpteps");
 
@@ -295,7 +300,7 @@ int main(int argc, char **argv)
   if (withepsinldos)
     { ierr = VecDuplicate(J,&pickposvec); CHKERRQ(ierr);
       ierr = VecSet(pickposvec,0.0); CHKERRQ(ierr);
-      ierr = VecSetValue(pickposvec,0,1.0,INSERT_VALUES);
+      ierr = VecSetValue(pickposvec,posj+Jdirection*Nxyz,1.0,INSERT_VALUES);
       VecAssemblyBegin(pickposvec);
       VecAssemblyEnd(pickposvec);
     }
@@ -483,7 +488,6 @@ int main(int argc, char **argv)
       if(Job==1)
 	{ //OutputVec(PETSC_COMM_WORLD, epsopt,filenameComm, "epsopt.m");
 	  //OutputVec(PETSC_COMM_WORLD, epsgrad,filenameComm, "epsgrad.m");
-	  //OutputVec(PETSC_COMM_WORLD, vgrad,filenameComm, "vgrad.m"); 
 	  int rankA;
 	  MPI_Comm_rank(PETSC_COMM_WORLD, &rankA);
 

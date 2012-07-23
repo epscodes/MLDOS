@@ -29,6 +29,7 @@ extern Vec pickposvec;
 extern int outputbase;
 extern double epsair;
 extern int refinedldos;
+extern int posj;
 
 #undef __FUNCT__ 
 #define __FUNCT__ "ResonatorSolver"
@@ -126,7 +127,7 @@ double ResonatorSolver(int DegFree,double *epsopt, double *grad, void *data)
   tmpldos = -1.0*tmpldos;
 
   if(withepsinldos)
-    ldos = tmpldos*(epsopt[0]+epsair)*hxyz;
+    ldos = tmpldos*(epsopt[posj]+epsair)*hxyz;
   else
     ldos = tmpldos*hxyz;
 
@@ -175,7 +176,7 @@ double ResonatorSolver(int DegFree,double *epsopt, double *grad, void *data)
 
    if (withepsinldos) //epsgrad = epscenter*olddev + ldos(only first component;
      {  
-       VecScale(epsgrad,epsopt[0]+epsair);
+       VecScale(epsgrad,epsopt[posj]+epsair);
        VecAXPY(epsgrad,tmpldos,pickposvec);
      }
       
