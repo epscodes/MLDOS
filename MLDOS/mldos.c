@@ -230,6 +230,7 @@ int main(int argc, char **argv)
   //Vec weightedJ;
   ierr = VecDuplicate(J,&weightedJ); CHKERRQ(ierr);
   ierr = VecPointwiseMult(weightedJ,J,weight);
+  ierr = PetscObjectSetName((PetscObject) weightedJ, "weightedJ");CHKERRQ(ierr);
 
   //Vec vR;
   ierr = VecDuplicate(J,&vR); CHKERRQ(ierr);
@@ -292,6 +293,7 @@ int main(int argc, char **argv)
   ierr = KSPGetPC(ksp,&pc);CHKERRQ(ierr);
   ierr = PCSetType(pc,PCLU);CHKERRQ(ierr);
   ierr = PCFactorSetMatSolverPackage(pc,MATSOLVERPASTIX);CHKERRQ(ierr);
+  ierr = PCSetFromOptions(pc);
   int maxkspit = 20;
   ierr = KSPSetTolerances(ksp,1e-14,PETSC_DEFAULT,PETSC_DEFAULT,maxkspit);CHKERRQ(ierr);
   ierr = KSPSetFromOptions(ksp);CHKERRQ(ierr);
