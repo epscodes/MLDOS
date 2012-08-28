@@ -2,6 +2,7 @@
 #include <petsc.h>
 #include <string.h>
 #include <nlopt.h>
+#include <complex.h>
 #include "Resonator.h"
 
 int count=1;
@@ -165,6 +166,11 @@ int main(int argc, char **argv)
   PetscOptionsGetInt(PETSC_NULL,"-refinedldos",&refinedldos,&flg);
   if(!flg) refinedldos=0;
   PetscPrintf(PETSC_COMM_WORLD,"the refinedldos is set as %d \n", refinedldos);
+  // Get cmpwrhs;
+  int cmpwrhs;
+   PetscOptionsGetInt(PETSC_NULL,"-cmpwrhs",&cmpwrhs,&flg);
+  if(!flg) cmpwrhs=0;
+  PetscPrintf(PETSC_COMM_WORLD,"the cmpwrhs is set as %d \n", cmpwrhs);
   /*--------------------------------------------------------*/
 
   /*--------------------------------------------------------*/
@@ -190,8 +196,26 @@ int main(int argc, char **argv)
 
   //Vec b; // b= i*omega*J;
   ierr = VecDuplicate(J,&b);CHKERRQ(ierr);
-  ierr = MatMult(D,J,b);CHKERRQ(ierr);
-  VecScale(b,omega);
+   ierr = PetscObjectSetName((PetscObject) b, "rhs");CHKERRQ(ierr);
+  if (cmpwrhs==0)
+    {
+      ierr = MatMult(D,J,b);CHKERRQ(ierr);
+      VecScale(b,omega);
+    }
+  else
+    {
+      double complex cmpiomega;
+      cmpiomega = (1+I/Qabs);
+      double sqrtiomegaR = -omega*cimag(csqrt(cmpiomega));
+      double sqrtiomegaI = omega*creal(csqrt(cmpiomega));
+      PetscPrintf(PETSC_COMM_WORLD,"the real part of sqrt cmpomega is %g and imag sqrt is % g ", sqrtiomegaR, sqrtiomegaI);
+      Vec tmpi;
+      ierr = VecDuplicate(J,&tmpi);
+      VecSet(b,0.0);
+      VecSet(tmpi,0.0);
+      CmpVecScale(J,b,sqrtiomegaR,sqrtiomegaI,D,tmpi);
+      VecDestroy(&tmpi);
+    }
 
   /*-------Get the weight vector ------------------*/
   //Vec weight;
