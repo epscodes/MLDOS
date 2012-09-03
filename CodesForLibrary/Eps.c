@@ -5,6 +5,8 @@
 
 extern int Job;
 extern char filenameComm[PETSC_MAX_PATH_LEN];
+extern int lrzsqr;
+extern Vec epsFReal;
 /* return a sparse matrix A that performs nearest-neighbor interpolation
    from data d an (Mx,My,Mz) centered grid to a 3x(Nx,Ny,Nz) Yee (E) grid,
    such that A*d computes the interpolated data.  Values outside
@@ -142,6 +144,9 @@ PetscErrorCode ModifyMatDiagonals( Mat M, Mat A, Mat D, Vec epsSReal, Vec epspml
   ierr = VecAXPY(epsC,1.0,epsmedium); CHKERRQ(ierr);
   if(Job==2)
     OutputVec(PETSC_COMM_WORLD,epsC,filenameComm,"epsFull.m"); // output eps in the whole domain for calculating V in matlab;
+
+  if(lrzsqr)
+    VecCopy(epsC,epsFReal);
 
   ierr = VecPointwiseMult(epsC,epsC,epspmlQ); CHKERRQ(ierr);
  

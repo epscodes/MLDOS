@@ -40,6 +40,17 @@ int cavityverbose;
 int refinedldos;
 // add posj for current location;
 int posj;
+// add indicator for lorenztian square weight;
+// real eps in large grid; only need when lrzsqr=1;
+// imag(sqrt(omega*(1+1i/Qabs))
+int lrzsqr;
+Vec epsFReal;
+double sqrtomegaI; 
+Vec nb;
+Vec y;
+Vec xsqr;
+double betar, betai;
+Mat C;
 /*------------------------------------------------------*/
 
 #undef __FUNCT__ 
@@ -171,6 +182,10 @@ int main(int argc, char **argv)
    PetscOptionsGetInt(PETSC_NULL,"-cmpwrhs",&cmpwrhs,&flg);
   if(!flg) cmpwrhs=0;
   PetscPrintf(PETSC_COMM_WORLD,"the cmpwrhs is set as %d \n", cmpwrhs);
+  // Get lrzsqr;
+   PetscOptionsGetInt(PETSC_NULL,"-lrzsqr",&lrzsqr,&flg);
+  if(!flg) lrzsqr=0;
+  PetscPrintf(PETSC_COMM_WORLD,"the lrzsqr is set as %d \n", lrzsqr);
   /*--------------------------------------------------------*/
 
   /*--------------------------------------------------------*/
@@ -236,6 +251,26 @@ int main(int argc, char **argv)
   ierr = VecDuplicate(J,&vR); CHKERRQ(ierr);
   GetRealPartVec(vR, 6*Nxyz);
 
+  // VecFReal;
+  if (lrzsqr)
+    { ierr = VecDuplicate(J,&epsFReal); CHKERRQ(ierr); 
+      ierr = PetscObjectSetName((PetscObject) epsFReal, "epsFReal");CHKERRQ(ierr);
+      sqrtomegaI = omega*cimag(csqrt(1+I/Qabs));
+      PetscPrintf(PETSC_COMM_WORLD,"the real part of sqrt cmpomega is %g and imag sqrt is % g ", omega*creal(csqrt(1+I/Qabs)), sqrtomegaI);
+      
+      betar = 2*sqrtomegaI;
+      betai = betar/Qabs;
+
+      ierr = VecDuplicate(J,&nb); CHKERRQ(ierr);
+      ierr = PetscObjectSetName((PetscObject) nb, "nb"); CHKERRQ(ierr);
+      
+      ierr = VecDuplicate(J,&y); CHKERRQ(ierr);
+      ierr = PetscObjectSetName((PetscObject) y, "y"); CHKERRQ(ierr);
+      
+      ierr = VecDuplicate(J,&xsqr); CHKERRQ(ierr); // xsqr = x*x;
+      ierr = PetscObjectSetName((PetscObject) xsqr, "xsqr"); CHKERRQ(ierr);
+      CongMat(PETSC_COMM_WORLD, &C, 6*Nxyz);
+}
   /*----------- Define PML muinv vectors  */
  
   Vec muinvpml;
@@ -269,10 +304,11 @@ int main(int argc, char **argv)
 
   //Vec epsSReal, epsgrad, vgrad; // create compatiable vectors with A.
   ierr = MatGetVecs(A,&epsSReal, &epsgrad); CHKERRQ(ierr);  
+  ierr = PetscObjectSetName((PetscObject) epsgrad, "epsgrad");CHKERRQ(ierr);
   ierr = VecDuplicate(epsSReal, &vgrad); CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject) epsSReal, "epsSReal");CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject) vgrad, "vgrad");CHKERRQ(ierr);
-
+  
   /*---------Setup the epsmedium vector----------------*/
   //Vec epsmedium;
   ierr = VecDuplicate(J,&epsmedium); CHKERRQ(ierr);
@@ -514,6 +550,7 @@ int main(int argc, char **argv)
       if(Job==1)
 	{ //OutputVec(PETSC_COMM_WORLD, epsopt,filenameComm, "epsopt.m");
 	  //OutputVec(PETSC_COMM_WORLD, epsgrad,filenameComm, "epsgrad.m");
+	  //OutputVec(PETSC_COMM_WORLD, vgrad,filenameComm, "vgrad.m");
 	  int rankA;
 	  MPI_Comm_rank(PETSC_COMM_WORLD, &rankA);
 
@@ -571,6 +608,15 @@ int main(int argc, char **argv)
 
   if (withepsinldos)
     {ierr=VecDestroy(&pickposvec); CHKERRQ(ierr);}
+
+  if (lrzsqr)
+    {
+      ierr=VecDestroy(&epsFReal); CHKERRQ(ierr);
+      ierr=VecDestroy(&xsqr); CHKERRQ(ierr);
+      ierr=VecDestroy(&y); CHKERRQ(ierr);
+      ierr=VecDestroy(&nb); CHKERRQ(ierr);
+      ierr=MatDestroy(&C); CHKERRQ(ierr);
+    }
 
   /*------------ finalize the program -------------*/
 

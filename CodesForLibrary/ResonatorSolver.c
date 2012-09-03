@@ -31,6 +31,19 @@ extern double epsair;
 extern int refinedldos;
 extern int posj;
 
+/* vector needed for lorentzian sqr weight; */
+extern int lrzsqr;
+extern Vec epsFReal;
+extern double sqrtomegaI;
+extern Vec nb;
+extern Vec y;
+extern Vec xsqr;
+extern Mat C;
+extern double betar;
+extern double betai;
+extern Vec weight;
+extern double Qabs;
+
 #undef __FUNCT__ 
 #define __FUNCT__ "ResonatorSolver"
 double ResonatorSolver(int DegFree,double *epsopt, double *grad, void *data)
@@ -122,7 +135,35 @@ double ResonatorSolver(int DegFree,double *epsopt, double *grad, void *data)
       PetscPrintf(PETSC_COMM_WORLD,"real part is %.16e and imag part is %.16e;\n computed refined real is %.16e \n", creal(ctmpldos),cimag(ctmpldos),tmpldos);
     }
   else
-    {ierr = VecDot(x,weightedJ,&tmpldos);}
+    { 
+      ierr = VecDot(x,weightedJ,&tmpldos);
+      
+      if(lrzsqr)
+	{ 
+	  // absorption power is beta*integral(epsFReal*weight*E^2)
+	  double abspwr, abspwri; 
+	  CmpVecProd(x,x,xsqr,D,0,tmpa,tmpb);	 
+	  VecPointwiseMult(tmp,xsqr,epsFReal);
+	  VecPointwiseMult(tmp,tmp,weight);
+	  CmpVecScale(tmp,tmpa,betar,betai,D,tmpb);
+
+	  // Get real part of absorption power;
+	  VecPointwiseMult(tmp,tmpa,vR); 
+	  VecSum(tmp,&abspwr);
+	  
+	  // Get imaginary part of absorption power; not necessary;
+	  MatMult(D,tmpa,tmpb);
+	  VecPointwiseMult(tmp,tmpb,vR);
+	  VecSum(tmp,&abspwri);
+	  abspwri=-abspwri;
+
+	  // Output the regular ldos and absorption power;
+	  PetscPrintf(PETSC_COMM_WORLD,"---The partial ldos at step %.5d is %.16e \n", count,-tmpldos*hxyz);
+	  PetscPrintf(PETSC_COMM_WORLD,"---The absportion power at step %.5d is %.16e + i*%.16e \n", count,-abspwr*hxyz,-abspwri*hxyz);
+	  tmpldos = tmpldos - abspwr;
+	}
+        
+    }
 
   tmpldos = -1.0*tmpldos;
 
@@ -168,11 +209,50 @@ double ResonatorSolver(int DegFree,double *epsopt, double *grad, void *data)
   /*-----take care of the gradient-------*/
   if (grad) {
 
-#if 1
-   /* Adjoint-Method tells us Mtran*lambba =J -> x = i*omega/weight*conj(lambda);  therefore the derivative is Re(x^2*weight*i*omega*(1+i/Qabs)*epspml) = Re(x^2*epscoef) ; here, I omit two minus signs: one is M'*lam= -j; the other is -Re(***). minus minus is a plus.*/
-   int aconj=0;
-   CmpVecProd(x,epscoef,tmp,D,aconj,tmpa,tmpb);
-   CmpVecProd(x,tmp,epsgrad,D,aconj,tmpa,tmpb);
+    if (lrzsqr==0)
+      {
+	/* Adjoint-Method tells us Mtran*lambba =J -> x = i*omega/weight*conj(lambda);  therefore the derivative is Re(x^2*weight*i*omega*(1+i/Qabs)*epspml) = Re(x^2*epscoef) ; here, I omit two minus signs: one is M'*lam= -j; the other is -Re(***). minus minus is a plus.*/
+	int aconj=0;
+	CmpVecProd(x,epscoef,tmp,D,aconj,tmpa,tmpb);
+	CmpVecProd(x,tmp,epsgrad,D,aconj,tmpa,tmpb);
+      }
+    else
+      {
+	/* Adjoint-Method tells us the gradient is i*omega*epspmlQ*x^2 + beta*x^2 + 2*beta*omega^2*epscoef*[transpose(M)\(epsFreal*weight*x)]*x;  where beta=2*absp*(1+1i/Qabs); absp=imag(sqrt(1+1i/Q)); due to the real representation of complex M, the last term in gradient should be 2*beta*omega^2*epscoef*(C*[transpose(M)\(C*(epsFReal*weight*x))])*x; */
+	
+	// first term: i*omega*epspmlQ*x^2 = epscoef*x^2;	
+	//CmpVecProd(x,x,xsqr,D,0,tmpa,tmpb); xsqr is computed in objective.
+	CmpVecProd(xsqr,epscoef,epsgrad,D,0,tmpa,tmpb);	
+
+	// nb = C*x*epsFReal*weight;
+       	MatMult(C,x,nb);
+	VecPointwiseMult(nb,nb,epsFReal);
+	VecPointwiseMult(nb,nb,weight);
+
+	// y = C*transpose(M) \ nb;
+	ierr = PetscGetTime(&t1);CHKERRQ(ierr);
+	ierr = KSPSolveTranspose(ksp,nb,tmp);CHKERRQ(ierr);
+	ierr = PetscGetTime(&t2);CHKERRQ(ierr);
+	tpast = t2 - t1;
+	if(rank==0)
+	  PetscPrintf(PETSC_COMM_SELF,"---The runing time for solving transpose is %f s \n",tpast);
+	MatMult(C,tmp,y);
+
+	// tmp = (2*beta*omega^2*y*x*epspmlQ); no weight in expression, since it is included in adjoint method nb;
+	CmpVecProd(y,x,tmp,D,0,tmpa,tmpb);
+	CmpVecProd(tmp,epspmlQ,y,D,0,tmpa,tmpb);
+	CmpVecScale(y,tmp,2*pow(omega,2)*betar,2*pow(omega,2)*betai,D,tmpb);
+	//VecPointwiseMult(tmp,tmp,vR);
+
+	// tmpa = beta*weight*x^2
+	CmpVecScale(xsqr,tmpa,betar,betai,D,tmpb);
+	VecPointwiseMult(tmpa,tmpa,weight);
+
+	// add these three terms together;
+	VecAXPBYPCZ(epsgrad,1.0,1.0,1.0,tmp,tmpa);
+
+      }
+    
 
    if (withepsinldos) //epsgrad = epscenter*olddev + ldos(only first component;
      {  
@@ -191,7 +271,6 @@ double ResonatorSolver(int DegFree,double *epsopt, double *grad, void *data)
    else
      VecScale(epsgrad,hxyz);// the factor hxyz handle both 2D and 3D;
 
-#endif
 
    // set imaginary part of epsgrad = 0; ( we're only interested in real part;
    ierr = VecPointwiseMult(epsgrad,epsgrad,vR); CHKERRQ(ierr);

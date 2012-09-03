@@ -67,6 +67,8 @@ PetscErrorCode TMprojmat(MPI_Comm comm, Mat *TMout, int Nxyz);
 
 PetscErrorCode MatSetTwoDiagonals(Mat M, Vec epsC, Mat D, double sign);
 
+PetscErrorCode CmpVecScale(Vec vin, Vec vout, double a, double b, Mat D, Vec vini);
+
 // from Output.c
 PetscErrorCode  OutputVec(MPI_Comm comm, Vec x, const char *filenameComm, const char *filenameProperty);
 
