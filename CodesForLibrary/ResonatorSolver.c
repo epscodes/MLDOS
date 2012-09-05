@@ -34,7 +34,6 @@ extern int posj;
 /* vector needed for lorentzian sqr weight; */
 extern int lrzsqr;
 extern Vec epsFReal;
-extern double sqrtomegaI;
 extern Vec nb;
 extern Vec y;
 extern Vec xsqr;
@@ -159,7 +158,7 @@ double ResonatorSolver(int DegFree,double *epsopt, double *grad, void *data)
 
 	  // Output the regular ldos and absorption power;
 	  PetscPrintf(PETSC_COMM_WORLD,"---The partial ldos at step %.5d is %.16e \n", count,-tmpldos*hxyz);
-	  PetscPrintf(PETSC_COMM_WORLD,"---The absportion power at step %.5d is %.16e + i*%.16e \n", count,-abspwr*hxyz,-abspwri*hxyz);
+	  PetscPrintf(PETSC_COMM_WORLD,"---The absportion power at step %.5d is %.16e + i*%.16e \n", count,abspwr*hxyz,abspwri*hxyz);
 	  tmpldos = tmpldos - abspwr;
 	}
         

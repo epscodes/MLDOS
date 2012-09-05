@@ -7,6 +7,7 @@ extern int Job;
 extern char filenameComm[PETSC_MAX_PATH_LEN];
 extern int lrzsqr;
 extern Vec epsFReal;
+extern int newQdef;
 /* return a sparse matrix A that performs nearest-neighbor interpolation
    from data d an (Mx,My,Mz) centered grid to a 3x(Nx,Ny,Nz) Yee (E) grid,
    such that A*d computes the interpolated data.  Values outside
@@ -109,10 +110,20 @@ PetscErrorCode EpsCombine(Mat D, Vec weight, Vec epspml, Vec epspmlQ, Vec epscoe
 {
 
   PetscErrorCode ierr;
-  // compute epspmlQ = epspml*(1+i/Qabs);
-  ierr =MatMult(D,epspml,epspmlQ); CHKERRQ(ierr);
-  ierr =VecScale(epspmlQ, 1.0/Qabs); CHKERRQ(ierr);
-  ierr =VecAXPY(epspmlQ, 1.0, epspml);CHKERRQ(ierr);
+  if (newQdef==0)
+    {
+      // compute epspmlQ = epspml*(1+i/Qabs);
+      ierr =MatMult(D,epspml,epspmlQ); CHKERRQ(ierr);
+      ierr =VecScale(epspmlQ, 1.0/Qabs); CHKERRQ(ierr);
+      ierr =VecAXPY(epspmlQ, 1.0, epspml);CHKERRQ(ierr);
+    }
+  else
+    {
+      // compute epspmlQ = epspml*(1+1i/Qabs)^2;
+      ierr =MatMult(D,epspml,epspmlQ); CHKERRQ(ierr);
+      ierr =VecScale(epspmlQ, 2.0/Qabs); CHKERRQ(ierr);
+      ierr =VecAXPY(epspmlQ, 1.0-1.0/pow(Qabs,2), epspml);CHKERRQ(ierr);
+    }
 
   // compute epscoef = i*omega*weight*epspmlQ;
   

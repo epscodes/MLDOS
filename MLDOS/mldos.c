@@ -51,6 +51,7 @@ Vec y;
 Vec xsqr;
 double betar, betai;
 Mat C;
+int newQdef;
 /*------------------------------------------------------*/
 
 #undef __FUNCT__ 
@@ -186,6 +187,10 @@ int main(int argc, char **argv)
    PetscOptionsGetInt(PETSC_NULL,"-lrzsqr",&lrzsqr,&flg);
   if(!flg) lrzsqr=0;
   PetscPrintf(PETSC_COMM_WORLD,"the lrzsqr is set as %d \n", lrzsqr);
+  // Get newQdef;
+   PetscOptionsGetInt(PETSC_NULL,"-newQdef",&newQdef,&flg);
+  if(!flg) newQdef=0;
+  PetscPrintf(PETSC_COMM_WORLD,"the newQdef is set as %d \n", newQdef);
   /*--------------------------------------------------------*/
 
   /*--------------------------------------------------------*/
@@ -255,11 +260,21 @@ int main(int argc, char **argv)
   if (lrzsqr)
     { ierr = VecDuplicate(J,&epsFReal); CHKERRQ(ierr); 
       ierr = PetscObjectSetName((PetscObject) epsFReal, "epsFReal");CHKERRQ(ierr);
-      sqrtomegaI = omega*cimag(csqrt(1+I/Qabs));
-      PetscPrintf(PETSC_COMM_WORLD,"the real part of sqrt cmpomega is %g and imag sqrt is % g ", omega*creal(csqrt(1+I/Qabs)), sqrtomegaI);
-      
-      betar = 2*sqrtomegaI;
-      betai = betar/Qabs;
+
+      if (newQdef==0)
+	{
+	  sqrtomegaI = omega*cimag(csqrt(1+I/Qabs));
+	  PetscPrintf(PETSC_COMM_WORLD,"the real part of sqrt cmpomega is %g and imag sqrt is % g ", omega*creal(csqrt(1+I/Qabs)), sqrtomegaI);
+	  betar = 2*sqrtomegaI;
+	  betai = betar/Qabs;
+	}
+      else
+	{
+	  double gamma;
+	  gamma = omega/Qabs;
+	  betar = 2*gamma*(1-1.0/pow(Qabs,2));
+	  betai = 2*gamma*(2.0/Qabs);
+	}
 
       ierr = VecDuplicate(J,&nb); CHKERRQ(ierr);
       ierr = PetscObjectSetName((PetscObject) nb, "nb"); CHKERRQ(ierr);
