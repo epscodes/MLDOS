@@ -377,3 +377,21 @@ PetscErrorCode CmpVecScale(Vec vin, Vec vout, double a, double b, Mat D, Vec vin
   VecAXPBYPCZ(vout,a,b,0.0, vin,vini); //bug fixed;
   PetscFunctionReturn(0);
 }
+
+#undef __FUNCT__ 
+#define __FUNCT__ "CmpVecDot"
+PetscErrorCode CmpVecDot(Vec v1, Vec v2,  double *preal, double *pimag, Mat D, Vec vR, Vec tmpr, Vec tmpi, Vec tmp)
+{
+ 
+  CmpVecProd(v1,v2,tmp,D,0,tmpr,tmpi);
+  
+  VecPointwiseMult(tmpr,tmp,vR);
+  VecSum(tmpr,preal);
+  
+  MatMult(D,tmp,tmpi);
+  VecPointwiseMult(tmpi,tmpi,vR);
+  VecSum(tmpi,pimag);
+  *pimag = -1.0*(*pimag);
+
+  PetscFunctionReturn(0);
+}

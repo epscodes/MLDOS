@@ -69,6 +69,8 @@ PetscErrorCode MatSetTwoDiagonals(Mat M, Vec epsC, Mat D, double sign);
 
 PetscErrorCode CmpVecScale(Vec vin, Vec vout, double a, double b, Mat D, Vec vini);
 
+PetscErrorCode CmpVecDot(Vec v1, Vec v2,  double *preal, double *pimag, Mat D, Vec vR, Vec tmpr, Vec tmpi, Vec tmp);
+
 // from Output.c
 PetscErrorCode  OutputVec(MPI_Comm comm, Vec x, const char *filenameComm, const char *filenameProperty);
 
