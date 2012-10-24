@@ -43,6 +43,13 @@ double sigmax, sigmay, sigmaz, Qabs;
 Vec J,epsOmegasqr, epsOmegasqri, epsCurrent, epspml;
 int bx[2], by[2], bz[2];
 
+/*---------global variables for mpi---------------*/
+int commsz, myrank, mygroup, myid, numgroups; 
+MPI_Comm comm_group, comm_sum;
+
+double omega0=2*PI;
+double gamma0,domega;
+
 /*------------------------------------------------------*/
 
 #undef __FUNCT__ 
@@ -56,7 +63,7 @@ int main(int argc, char **argv)
 
   PetscBool flg;
 
-   
+  gamma0=omega0/20;
   /*-------------------------------------------------*/
   int Mx,My,Mz,Mzslab,DegFree, anisotropic;
 
@@ -105,7 +112,7 @@ int main(int argc, char **argv)
   int Nomega;
   PetscOptionsGetInt(PETSC_NULL,"-Nomega",&Nomega,&flg);  MyCheckAndOutputDouble(flg,Nomega,"Nomega","Nomega");
 
-  double domega;
+  //double domega;
   domega = (omegau-omegal)/(Nomega-1);
 
 
@@ -155,27 +162,33 @@ int main(int argc, char **argv)
   PetscPrintf(PETSC_COMM_WORLD,"the posj is %d \n. ", posj);
 
   /*--------------------------------------------------------*/
+ 
+ // get information for MPI;
+ PetscOptionsGetInt(PETSC_NULL,"-numgroups",&numgroups,&flg);  MyCheckAndOutputInt(flg,numgroups,"numgroups","numgroups");
+ // set up MPI slpit;
+ mympisetup();
+ PetscPrintf(PETSC_COMM_WORLD,"MPI split is set up !\n");
 
   /*--------------------------------------------------------*/
 
 
   /*---------- Set the current source---------*/
   //Mat D; //ImaginaryIMatrix;
-  ImagIMat(PETSC_COMM_WORLD, &D,6*Nxyz);
+  ImagIMat(comm_group, &D,6*Nxyz);
 
   
-  ierr = VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, 6*Nxyz, &J);CHKERRQ(ierr);
+  ierr = VecCreateMPI(comm_group, PETSC_DECIDE, 6*Nxyz, &J);CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject) J, "Source");CHKERRQ(ierr);
   VecSet(J,0.0); //initialization;
 
   if (Jdirection == 1)
-    SourceSingleSetX(PETSC_COMM_WORLD, J, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
+    SourceSingleSetX(comm_group, J, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
   else if (Jdirection ==2)
-    SourceSingleSetY(PETSC_COMM_WORLD, J, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
+    SourceSingleSetY(comm_group, J, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
   else if (Jdirection == 3)
-    SourceSingleSetZ(PETSC_COMM_WORLD, J, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
+    SourceSingleSetZ(comm_group, J, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
   else
-    PetscPrintf(PETSC_COMM_WORLD," Please specify correct direction of current: x (1) , y (2) or z (3)\n "); 
+    PetscPrintf(comm_group," Please specify correct direction of current: x (1) , y (2) or z (3)\n "); 
 
   //Vec b; // b= i*omega*J;
   ierr = VecDuplicate(J,&b);CHKERRQ(ierr);
@@ -219,7 +232,7 @@ int main(int argc, char **argv)
 
   //Mat A; 
   //new routine for myinterp;
-  myinterp(PETSC_COMM_WORLD, &A, Nx,Ny,Nz, LowerPML*floor((Nx-Mx)/2),LowerPML*floor((Ny-My)/2),LowerPML*floor((Nz-Mz)/2), Mx,My,Mz,Mzslab, anisotropic); // LoweerPML*Npmlx,..,.., specify where the interp starts;  
+  myinterp(comm_group, &A, Nx,Ny,Nz, LowerPML*floor((Nx-Mx)/2),LowerPML*floor((Ny-My)/2),LowerPML*floor((Nz-Mz)/2), Mx,My,Mz,Mzslab, anisotropic); // LoweerPML*Npmlx,..,.., specify where the interp starts;  
 
   //Vec epsSReal, epsgrad, vgrad; // create compatiable vectors with A.
   ierr = MatGetVecs(A,&epsSReal, &epsgrad); CHKERRQ(ierr);  
@@ -245,7 +258,7 @@ int main(int argc, char **argv)
   
   //KSP ksp;
   PC pc; 
-  ierr = KSPCreate(PETSC_COMM_WORLD,&ksp);CHKERRQ(ierr);
+  ierr = KSPCreate(comm_group,&ksp);CHKERRQ(ierr);
   //ierr = KSPSetType(ksp, KSPPREONLY);CHKERRQ(ierr);
   ierr = KSPSetType(ksp, KSPGMRES);CHKERRQ(ierr);
   ierr = KSPGetPC(ksp,&pc);CHKERRQ(ierr);
@@ -294,13 +307,13 @@ int main(int argc, char **argv)
 
   FILE *ptf;
   ptf = fopen(initialdata,"r");
-  PetscPrintf(PETSC_COMM_WORLD,"reading from input files \n");
+  PetscPrintf(comm_group,"reading from input files \n");
 
   int i;
   // set the dielectric at the center is fixed, and alwyas high
   //epsopt[0]=myub; is defined below near lb and ub;
   for (i=0;i<DegFree;i++)
-    { //PetscPrintf(PETSC_COMM_WORLD,"current eps reading is %lf \n",epsopt[i]);
+    { //PetscPrintf(comm_group,"current eps reading is %lf \n",epsopt[i]);
       fscanf(ptf,"%lf",&epsopt[i]);
     }
   fclose(ptf);
@@ -328,29 +341,36 @@ int main(int argc, char **argv)
   /*----call the routine to calculate the ldos---*/
   
   
-  double *data;
-  data = (double*) malloc(sizeof(double)*Nomega);
+  
+  int Nsubomega = Nomega/numgroups; // number of omegas to be computed per group;
+  double subdata[Nsubomega];
+  //subdata = (double*) malloc(sizeof(double)*Nsubomega);
  
-  for (i=0; i<Nomega; i++)
+  for (i=0; i<Nsubomega; i++)
     {
-      data[i]=ldoscal(omegal+i*domega);
+      subdata[i]=ldoscal(omegal+mygroup*Nsubomega*domega+i*domega);
     }
 
-   int rank;
-   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-   if (rank==0)
+  
+  double *data=NULL;
+  if (myrank==0)
+    data = (double *) malloc(sizeof(double)*Nomega);
+
+  if (myid==0) //collect only on myid==0; first chunk in each group;
+    MPI_Gather(subdata,Nsubomega,MPI_DOUBLE,data,Nsubomega,MPI_DOUBLE,0,comm_sum);
+
+
+   if (myrank==0)
      {
-       
        double mysum=0;
-       double omegacur=0, omega0=2*PI;
-       double gamma = omega0/20;
+       double omegacur=0;
        for(i=0; i<Nomega; i++)
 	 {
 	   omegacur=omegal+i*domega;
-	   mysum = mysum + data[i]/pow(pow(omegacur-omega0,2)+pow(gamma,2),2); 
+	   mysum = mysum + data[i]/pow(pow(omegacur-omega0,2)+pow(gamma0,2),2); 
 	 }
        
-       mysum=(pow(gamma,3)/PI*2)*mysum*domega;
+       mysum=(pow(gamma0,3)/PI*2)*mysum*domega;
        printf("the sum you calculated is %.16e \n",mysum);
 
        char filenameoutput[PETSC_MAX_PATH_LEN];
