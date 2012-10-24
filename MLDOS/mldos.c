@@ -566,6 +566,7 @@ int main(int argc, char **argv)
 	{ //OutputVec(PETSC_COMM_WORLD, epsopt,filenameComm, "epsopt.m");
 	  //OutputVec(PETSC_COMM_WORLD, epsgrad,filenameComm, "epsgrad.m");
 	  //OutputVec(PETSC_COMM_WORLD, vgrad,filenameComm, "vgrad.m");
+	  //OutputVec(PETSC_COMM_WORLD, x,filenameComm, "x.m");
 	  int rankA;
 	  MPI_Comm_rank(PETSC_COMM_WORLD, &rankA);
 

@@ -1,9 +1,9 @@
-all: MoperatorGeneral.o SourceGeneration.o PML.o Eps.o MathTools.o Output.o ldos.o  ResonatorSolver.o EigenSolver.o ResonatorSolverSolar.o MoperatorGeneralBloch.o MoperatorGeneralBloch2D.o ResonatorSolverSolar2D.o  mympisetup.o
+all: MoperatorGeneral.o SourceGeneration.o PML.o Eps.o MathTools.o Output.o ldos.o  ResonatorSolver.o EigenSolver.o ResonatorSolverSolar.o MoperatorGeneralBloch.o MoperatorGeneralBloch2D.o ResonatorSolverSolar2D.o  mympisetup.o ldoscal.o
 
 include ${PETSC_DIR}/conf/variables
 include ${PETSC_DIR}/conf/rules
 #include ${SLEPC_DIR}/conf/slepc_common
-CLEANFILES =  MoperatorGeneral.o SourceGeneration.o PML.o EPS.o MathTools.o Output.o ldos.o  ResonatorSolver.o EigenSolver.o ResonatorSolverSolar.o MoperatorGeneralBloch.o  MoperatorGeneralBloch2D.o ResonatorSolverSolar2D.o SolarEigenvaluesSolver.o mympisetup.o 
+CLEANFILES =  MoperatorGeneral.o SourceGeneration.o PML.o EPS.o MathTools.o Output.o ldos.o  ResonatorSolver.o EigenSolver.o ResonatorSolverSolar.o MoperatorGeneralBloch.o  MoperatorGeneralBloch2D.o ResonatorSolverSolar2D.o SolarEigenvaluesSolver.o mympisetup.o ldoscal.o 
 
 MoperatorGeneral: MoperatorGeneral.o
 	$(CLINKER) -Wall -g  -o $@ MoperatorGeneral.o  
@@ -35,3 +35,5 @@ ResonatorSolverSolar2D:ResonatorSolverSolar2D.o
 #	$(CLINKER) -Wall -g -o $@ SolarEigenvaluesSolver.o
 mympisetup:mympisetup.o
 	$(CLINKER) -Wall -g -o $@ mympisetup.o  
+ldoscal:ldoscal.o
+	$(CLINKER) -Wall -g -o $@ ldoscal.o 

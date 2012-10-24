@@ -140,6 +140,9 @@ double ResonatorSolverPre(int Mxyz, double *epsopt, double *grad, void *data);
 // from prefun.c
 PetscErrorCode prefun(int Mxyz,double *epsopt, double *deps, double *Hdeps, void *data);
 
+// from ldoscal.c
+double ldoscal(double omega);
+
 /* use global variables; so these data type are obsolete; 
 // datatype used for optimization of dielectric structure;
 typedef struct { 

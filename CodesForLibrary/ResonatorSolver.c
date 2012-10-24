@@ -120,7 +120,7 @@ double ResonatorSolver(int DegFree,double *epsopt, double *grad, void *data)
 #endif   
 
 
-  double ldos, tmpldos; //tmpldos = -Re((weight.*J)'*E) or -Re(E'*(weight*J));
+  double ldos, tmpldos, tmpldosr, tmpldosi; //tmpldos = -Re((weight.*J)'*E) or -Re(E'*(weight*J));
   double complex ctmpldos;
   if (refinedldos)
     {
@@ -136,6 +136,8 @@ double ResonatorSolver(int DegFree,double *epsopt, double *grad, void *data)
   else
     { 
       ierr = VecDot(x,weightedJ,&tmpldos);
+      
+      CmpVecDot(x,weightedJ,&tmpldosr,&tmpldosi,D,vR,tmp,tmpa,tmpb);
       
       if(lrzsqr)
 	{ 
@@ -157,8 +159,9 @@ double ResonatorSolver(int DegFree,double *epsopt, double *grad, void *data)
 	  abspwri=-abspwri;
 
 	  // Output the regular ldos and absorption power;
-	  PetscPrintf(PETSC_COMM_WORLD,"---The partial ldos at step %.5d is %.16e \n", count,-tmpldos*hxyz);
-	  PetscPrintf(PETSC_COMM_WORLD,"---The absportion power at step %.5d is %.16e + i*%.16e \n", count,abspwr*hxyz,abspwri*hxyz);
+	  PetscPrintf(PETSC_COMM_WORLD,"---The partial ldos at step %.5d is      %.8e \n", count,-tmpldos*hxyz);
+	  PetscPrintf(PETSC_COMM_WORLD,"---The ldosr and ldosi is                 %.8e + 1i*%.8e \n", -tmpldosr*hxyz,-tmpldosi*hxyz);
+	  PetscPrintf(PETSC_COMM_WORLD,"---The absportion power at step %.5d is %.8e + 1i*%.8e \n", count,abspwr*hxyz,abspwri*hxyz);
 	  tmpldos = tmpldos - abspwr;
 	}
         
@@ -178,7 +181,7 @@ double ResonatorSolver(int DegFree,double *epsopt, double *grad, void *data)
       PetscPrintf(PETSC_COMM_WORLD,"---The current invldos (minapp) at step %.5d is %.16e \n", count,ldos);
     }
   else
-    PetscPrintf(PETSC_COMM_WORLD,"---The current ldos at step %.5d is %.16e \n", count,ldos);
+    PetscPrintf(PETSC_COMM_WORLD,"---The current ldos at step %.5d is      %.8e \n", count,ldos);
 
   PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------- \n");
 
