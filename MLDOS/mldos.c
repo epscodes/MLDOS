@@ -225,7 +225,7 @@ int main(int argc, char **argv)
   else
     {
       double complex cmpiomega;
-      cmpiomega = (1+I/Qabs);
+      cmpiomega = cpow(1+I/Qabs,newQdef+1);
       double sqrtiomegaR = -omega*cimag(csqrt(cmpiomega));
       double sqrtiomegaI = omega*creal(csqrt(cmpiomega));
       PetscPrintf(PETSC_COMM_WORLD,"the real part of sqrt cmpomega is %g and imag sqrt is % g ", sqrtiomegaR, sqrtiomegaI);

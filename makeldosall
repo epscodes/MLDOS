@@ -10,7 +10,9 @@ export NloptLibPath=${HOME}/MyLocal/nlopt_0/.libs
 cd CodesForLibrary
 bash makelibcavity
 
-#cd ../MLDOS make clean make
+cd ../MLDOS 
+make clean
+make
 
 cd ../MLSUM
 make clean
