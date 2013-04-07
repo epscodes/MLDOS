@@ -117,10 +117,11 @@ int main(int argc, char **argv)
   hz = hx;
   hxyz = (Nz==1)*hx*hy + (Nz>1)*hx*hy*hz;  
 
-  double omega, omegaone, omegatwo;
+  double omega, omegaone, omegatwo, wratio;
   PetscOptionsGetReal(PETSC_NULL,"-omega",&omega,&flg);  MyCheckAndOutputDouble(flg,omega,"omega","omega");
+   PetscOptionsGetReal(PETSC_NULL,"-wratio",&wratio,&flg);  MyCheckAndOutputDouble(flg,omega,"wratio","wratio");
   omegaone=omega;
-  omegatwo=2*omega;
+  omegatwo=wratio*omega;
   PetscPrintf(PETSC_COMM_WORLD,"---omegaone is %.16e and omegatwo is %.16e ---\n",omegaone, omegatwo);
 
   PetscOptionsGetReal(PETSC_NULL,"-Qabs",&Qabs,&flg); 
