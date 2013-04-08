@@ -14,7 +14,7 @@ extern double cldos;
 extern int Nx, Ny, Nz, Nxyz;
 extern double hx, hy, hz, hxyz,omega;
 extern KSP ksp;
-extern Vec epspmlQ, epsmedium, epsC, epsCi, epsP, x, weightedJ, vR, epsSReal;
+extern Vec epspmlQ, epsmedium, epsC, epsCi, epsP, x, vR, epsSReal;
 extern Mat M, A, D;
 extern char filenameComm[PETSC_MAX_PATH_LEN];
 
@@ -54,6 +54,7 @@ double ldoskernel(int DegFree,double *epsopt, double *grad, void *data)
 
   double omega= ptmyfundata->Somega;
   Vec b = ptmyfundata->Sb;
+  Vec weightedJ = ptmyfundata->SweightedJ;
   Vec epscoef = ptmyfundata->Sepscoef;  
   KSP ksp = ptmyfundata->Sksp;
 

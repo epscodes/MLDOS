@@ -18,7 +18,7 @@ int Job;
 int Nx, Ny, Nz, Nxyz;
 double hx, hy, hz, hxyz, Qabs;
 double *muinv;
-Vec epspmlQ, epsmedium, epsC, epsCi, epsP, b, x, weightedJ, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, tmpc, weight;
+Vec epspmlQ, epsmedium, epsC, epsCi, epsP, b, x, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, tmpc, weight;
 Mat A, D, M;
 IS from, to;
 char filenameComm[PETSC_MAX_PATH_LEN];
@@ -97,10 +97,11 @@ int main(int argc, char **argv)
   int DegFreeAll=DegFree+1;
   PetscPrintf(PETSC_COMM_WORLD," the Degree of Freedoms ALL is %d \n ", DegFreeAll);
 
-  int BCPeriod, Jdirection, LowerPML;
+  int BCPeriod, Jdirection, Jdirectiontwo, LowerPML;
   int bx[2], by[2], bz[2];
   PetscOptionsGetInt(PETSC_NULL,"-BCPeriod",&BCPeriod,&flg);  MyCheckAndOutputInt(flg,BCPeriod,"BCPeriod","BCPeriod given");
   PetscOptionsGetInt(PETSC_NULL,"-Jdirection",&Jdirection,&flg);  MyCheckAndOutputInt(flg,Jdirection,"Jdirection","Diapole current direction");
+  PetscOptionsGetInt(PETSC_NULL,"-Jdirectiontwo",&Jdirectiontwo,&flg);  MyCheckAndOutputInt(flg,Jdirectiontwo,"Jdirectiontwo","Diapole current direction for source two");
   PetscOptionsGetInt(PETSC_NULL,"-LowerPML",&LowerPML,&flg);  MyCheckAndOutputInt(flg,LowerPML,"LowerPML","PML in the lower xyz boundary");
   PetscOptionsGetInt(PETSC_NULL,"-bxl",bx,&flg);  MyCheckAndOutputInt(flg,bx[0],"bxl","BC at x lower");
   PetscOptionsGetInt(PETSC_NULL,"-bxu",bx+1,&flg);  MyCheckAndOutputInt(flg,bx[1],"bxu","BC at x upper");
@@ -119,7 +120,7 @@ int main(int argc, char **argv)
 
   double omega, omegaone, omegatwo, wratio;
   PetscOptionsGetReal(PETSC_NULL,"-omega",&omega,&flg);  MyCheckAndOutputDouble(flg,omega,"omega","omega");
-   PetscOptionsGetReal(PETSC_NULL,"-wratio",&wratio,&flg);  MyCheckAndOutputDouble(flg,omega,"wratio","wratio");
+   PetscOptionsGetReal(PETSC_NULL,"-wratio",&wratio,&flg);  MyCheckAndOutputDouble(flg,wratio,"wratio","wratio");
   omegaone=omega;
   omegatwo=wratio*omega;
   PetscPrintf(PETSC_COMM_WORLD,"---omegaone is %.16e and omegatwo is %.16e ---\n",omegaone, omegatwo);
@@ -224,6 +225,21 @@ int main(int argc, char **argv)
   else
     PetscPrintf(PETSC_COMM_WORLD," Please specify correct direction of current: x (1) , y (2) or z (3)\n "); 
 
+  Vec Jtwo;
+  ierr = VecDuplicate(J, &Jtwo);CHKERRQ(ierr);
+  ierr = PetscObjectSetName((PetscObject) Jtwo, "Sourcetwo");CHKERRQ(ierr);
+  VecSet(Jtwo,0.0); //initialization;
+
+  if (Jdirectiontwo == 1)
+    SourceSingleSetX(PETSC_COMM_WORLD, Jtwo, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
+  else if (Jdirectiontwo ==2)
+    SourceSingleSetY(PETSC_COMM_WORLD, Jtwo, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
+  else if (Jdirectiontwo == 3)
+    SourceSingleSetZ(PETSC_COMM_WORLD, Jtwo, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
+  else
+    PetscPrintf(PETSC_COMM_WORLD," Please specify correct direction of current two: x (1) , y (2) or z (3)\n "); 
+
+
   //Vec b; // b= i*omega*J;
   Vec bone, btwo;
 
@@ -233,17 +249,17 @@ int main(int argc, char **argv)
   ierr = VecDuplicate(J,&bone);CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject) bone, "rhsone");CHKERRQ(ierr);
 
-  ierr = VecDuplicate(J,&btwo);CHKERRQ(ierr);
+  ierr = VecDuplicate(Jtwo,&btwo);CHKERRQ(ierr);
   ierr = PetscObjectSetName((PetscObject) btwo, "rhstwo");CHKERRQ(ierr);
 
   if (cmpwrhs==0)
     {
       ierr = MatMult(D,J,b);CHKERRQ(ierr);
+      ierr = MatMult(D,Jtwo,btwo);CHKERRQ(ierr);
       
       VecCopy(b,bone);
       VecScale(bone,omegaone);
 
-      VecCopy(b,btwo);
       VecScale(btwo,omegatwo);
 
       VecScale(b,omega);      
@@ -273,10 +289,15 @@ int main(int argc, char **argv)
   else
     VecSet(weight,1.0);
 
-  //Vec weightedJ;
+  Vec weightedJ;
   ierr = VecDuplicate(J,&weightedJ); CHKERRQ(ierr);
   ierr = VecPointwiseMult(weightedJ,J,weight);
   ierr = PetscObjectSetName((PetscObject) weightedJ, "weightedJ");CHKERRQ(ierr);
+
+  Vec weightedJtwo;
+  ierr = VecDuplicate(Jtwo,&weightedJtwo); CHKERRQ(ierr);
+  ierr = VecPointwiseMult(weightedJtwo,Jtwo,weight);
+  ierr = PetscObjectSetName((PetscObject) weightedJtwo, "weightedJtwo");CHKERRQ(ierr);
 
   //Vec vR;
   ierr = VecDuplicate(J,&vR); CHKERRQ(ierr);
@@ -521,7 +542,7 @@ int main(int argc, char **argv)
 
       opt = nlopt_create(mynloptalg, numofvar);
       
-      myfundatatypeshg data[2] = {{omegaone, bone, epscoefone,kspone},{omegatwo, btwo, epscoeftwo,ksptwo}};
+      myfundatatypeshg data[2] = {{omegaone, bone, weightedJ, epscoefone,kspone},{omegatwo, btwo, weightedJtwo, epscoeftwo,ksptwo}};
 
       nlopt_add_inequality_constraint(opt,ldosconstraint, &data[0], 1e-8);
       nlopt_add_inequality_constraint(opt,ldosconstraint, &data[1], 1e-8);
@@ -668,6 +689,11 @@ int main(int argc, char **argv)
       ierr=VecDestroy(&nb); CHKERRQ(ierr);
       ierr=MatDestroy(&C); CHKERRQ(ierr);
     }
+
+  ierr = VecDestroy(&bone); CHKERRQ(ierr);
+  ierr = VecDestroy(&btwo); CHKERRQ(ierr);
+  ierr = VecDestroy(&Jtwo); CHKERRQ(ierr);
+  
 
   /*------------ finalize the program -------------*/
 

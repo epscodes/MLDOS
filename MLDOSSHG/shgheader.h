@@ -2,7 +2,7 @@
 
 typedef struct{
   double Somega;
-  Vec Sb, Sepscoef;
+  Vec Sb, SweightedJ, Sepscoef;
   KSP Sksp;
 } myfundatatypeshg;
 
