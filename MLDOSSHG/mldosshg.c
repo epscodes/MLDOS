@@ -551,10 +551,20 @@ int main(int argc, char **argv)
       nlopt_set_upper_bounds(opt,ub);
       nlopt_set_maxeval(opt,maxeval);
       nlopt_set_maxtime(opt,maxtime);
+
+
+      /*add functionality to choose local optimizer; */
+      int mynloptlocalalg;
+      nlopt_opt local_opt;
+      PetscOptionsGetInt(PETSC_NULL,"-mynloptlocalalg",&mynloptlocalalg,&flg);  MyCheckAndOutputInt(flg,mynloptlocalalg,"mynloptlocalalg","The local optimization algorithm used ");
+      if (mynloptlocalalg)
+	{ 
+	  local_opt=nlopt_create(mynloptlocalalg,numofvar);
+	  nlopt_set_ftol_rel(local_opt, 1e-14);
+	  nlopt_set_maxeval(local_opt,100000);
+	  nlopt_set_local_optimizer(opt,local_opt);
+	}
     }
-
-
-
 
   switch (Job)
     {
