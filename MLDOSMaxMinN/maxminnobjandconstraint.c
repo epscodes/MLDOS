@@ -24,7 +24,6 @@ double maxminnobjfun(int DegFreeAll,double *epsoptAll, double *gradAll, void *da
       for (i=0;i<DegFreeAll;i++)
 	fprintf(ptf,"%0.16e \n",gradAll[i]);
       fclose(ptf);
-
     }
 
   PetscPrintf(PETSC_COMM_WORLD,"**the current objective value is %.8e**\n",epsoptAll[DegFreeAll-1]);
