@@ -28,6 +28,9 @@ extern double epsair;
 extern KSP ksp;
 extern PC pc;
 
+extern int Nj;
+extern int sameomega;
+
 #undef __FUNCT__ 
 #define __FUNCT__ "ldosmaxminnkernel"
 double ldosmaxminnkernel(int DegFree,double *epsopt, double *grad, void *data)
@@ -36,11 +39,12 @@ double ldosmaxminnkernel(int DegFree,double *epsopt, double *grad, void *data)
 
   myfundatatypemaxminn *ptmyfundata= (myfundatatypemaxminn *) data;
 
+  int idj = ptmyfundata->Sidj;
   double omega= ptmyfundata->Somega;
   Vec b = ptmyfundata->Sb;
   Vec weightedJ = ptmyfundata->SweightedJ;
   Vec epscoef = ptmyfundata->Sepscoef;
-  PetscPrintf(PETSC_COMM_WORLD,"current omega in kernel is %.8e \n",omega);  
+ 
 
   // copy epsopt to epsSReal;
   ierr=ArrayToVec(epsopt, epsSReal); CHKERRQ(ierr);
@@ -59,7 +63,12 @@ double ldosmaxminnkernel(int DegFree,double *epsopt, double *grad, void *data)
   /*-----------------KSP Solving------------------*/ 
 
   //always use LU decomposition;
-  ierr = KSPSetOperators(ksp,Mone,Mone,SAME_NONZERO_PATTERN);CHKERRQ(ierr);
+
+  if(sameomega && idj>0)
+    {ierr = KSPSetOperators(ksp,Mone,Mone,SAME_PRECONDITIONER);CHKERRQ(ierr);}
+  else
+    {ierr = KSPSetOperators(ksp,Mone,Mone,SAME_NONZERO_PATTERN);CHKERRQ(ierr);}
+
   ierr = KSPSolve(ksp,b,x);CHKERRQ(ierr);
   ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
   ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations in this step is %D----\n ",its);CHKERRQ(ierr);
@@ -84,12 +93,11 @@ double ldosmaxminnkernel(int DegFree,double *epsopt, double *grad, void *data)
 #endif   
 
   double ldos, tmpldos, tmpldosr, tmpldosi; //tmpldos = -Re((weight.*J)'*E) or -Re(E'*(weight*J));
-  double complex ctmpldos;
   ierr = VecDot(x,weightedJ,&tmpldos);
   CmpVecDot(x,weightedJ,&tmpldosr,&tmpldosi,D,vR,tmp,tmpa,tmpb);
   tmpldos = -1.0*tmpldos;
   ldos = tmpldos*hxyz;
-  PetscPrintf(PETSC_COMM_WORLD,"---The current ldos at step %.5d and frequency %.8e  is      %.8e \n", count, omega, ldos);
+  PetscPrintf(PETSC_COMM_WORLD,"---The current ldos at step %.5d with %d-th (directional) frequency %.8e  is      %.8e \n", count, idj+1, omega, ldos);
   PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------- \n");
 
  
@@ -133,7 +141,8 @@ double ldosmaxminnkernel(int DegFree,double *epsopt, double *grad, void *data)
     ierr = VecToArray(vgrad,grad,scatter,from,to,vgradlocal,DegFree);
   }
 
-  count++;
+  if(idj==(Nj-1))
+    count++;
 
   MatDestroy(&Mone);
 

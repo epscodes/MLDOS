@@ -32,6 +32,9 @@ double ctmpldos;
 /*---------*/
 KSP ksp;
 PC pc;
+// add sameomega for special solving purpose.
+int sameomega;
+
 /*--redundant variable; just for global variables in eps.c; useless--*/
 int lrzsqr=0;
 int newQdef=0;
@@ -94,7 +97,7 @@ int main(int argc, char **argv)
   PetscOptionsGetInt(PETSC_NULL,"-bzu",bz+1,&flg);  MyCheckAndOutputInt(flg,bz[1],"bzu","BC at z upper");
 
 
-  double  epssub, RRT, sigmax, sigmay, sigmaz ;
+  double  epssub, RRT, sigmax, sigmay, sigmaz;
    
   PetscOptionsGetReal(PETSC_NULL,"-hx",&hx,&flg);  MyCheckAndOutputDouble(flg,hx,"hx","hx");
   hy = hx;
@@ -104,12 +107,13 @@ int main(int argc, char **argv)
   double omega;
   double *omegaarray;
   PetscOptionsGetReal(PETSC_NULL,"-omega",&omega,&flg);  MyCheckAndOutputDouble(flg,omega,"omega","omega");
-   
+  PetscOptionsGetInt(PETSC_NULL,"-sameomega",&sameomega,&flg);  MyCheckAndOutputInt(flg,sameomega,"sameomega","sameomega"); 
+
   PetscMalloc(Nj*sizeof(double),&omegaarray);
   int i;
   for(i=0;i<Nj;i++)
     {
-      omegaarray[i]=(i*0.+1)*omega;
+      omegaarray[i]=(sameomega)?omega:((i+1)*omega);
     }
 
   PetscOptionsGetReal(PETSC_NULL,"-Qabs",&Qabs,&flg); 
@@ -194,6 +198,11 @@ int main(int argc, char **argv)
   SourceSingleSetY(PETSC_COMM_WORLD, Jy, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
   SourceSingleSetZ(PETSC_COMM_WORLD, Jz, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
  
+  int Jdirection;
+  PetscOptionsGetInt(PETSC_NULL,"-Jdirection",&Jdirection,&flg);  
+  if(!sameomega)
+    {MyCheckAndOutputInt(flg,Jdirection,"Jdirection","Diapole current direction");}
+
   Vec *Jarray, *barray, *weightedJarray;
   ierr = VecDuplicateVecs(J,Nj,&Jarray);
   ierr = VecDuplicateVecs(J,Nj,&barray);
@@ -205,7 +214,19 @@ int main(int argc, char **argv)
       ierr =VecSet(Jarray[i],0.0); CHKERRQ(ierr);
       double theta;
       theta= (Nj==1) ? 0 : ((PI/2)/(Nj-1)*i);
-      ierr = VecAXPBYPCZ(Jarray[i],cos(theta),sin(theta),0.0,Jx,Jy);CHKERRQ(ierr);
+      if(sameomega)
+	{ierr = VecAXPBYPCZ(Jarray[i],cos(theta),sin(theta),0.0,Jx,Jy);CHKERRQ(ierr);}
+      else
+	{ 
+	  if(Jdirection==1)
+	    {ierr = VecCopy(Jx,Jarray[i]);CHKERRQ(ierr);}
+	  else if(Jdirection==2)
+	    {ierr = VecCopy(Jy,Jarray[i]);CHKERRQ(ierr);}	
+	  else if(Jdirection==3)
+	    {ierr = VecCopy(Jz,Jarray[i]);CHKERRQ(ierr);}
+	  else
+	    PetscPrintf(PETSC_COMM_WORLD,"wrong input of current direction!\n");
+	}
 
       // compute barray; (only work for cmpwrhs=0;)
       ierr =VecSet(barray[i],0.0); 
@@ -374,7 +395,7 @@ int main(int argc, char **argv)
   ierr=PetscMalloc(Nj*sizeof(myfundatatypemaxminn),&data); CHKERRQ(ierr);
   for(i=0;i<Nj;i++)
     {
-      data[i]=(myfundatatypemaxminn){omegaarray[i],barray[i],weightedJarray[i],epscoefarray[i]};
+      data[i]=(myfundatatypemaxminn){i,omegaarray[i],barray[i],weightedJarray[i],epscoefarray[i]};
       nlopt_add_inequality_constraint(opt,ldosmaxminnconstraint, &data[i], 1e-8);
     }
 

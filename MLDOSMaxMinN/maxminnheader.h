@@ -1,6 +1,7 @@
 #include <petsc.h>
 
 typedef struct{
+  int Sidj;
   double Somega;
   Vec Sb, SweightedJ, Sepscoef;
 } myfundatatypemaxminn;
