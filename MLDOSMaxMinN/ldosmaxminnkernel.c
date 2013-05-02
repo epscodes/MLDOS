@@ -12,8 +12,7 @@ extern double cldos;
 
 /*global varaible */
 extern int Nx, Ny, Nz, Nxyz;
-extern double hx, hy, hz, hxyz,omega;
-extern KSP ksp;
+extern double hx, hy, hz, hxyz;
 extern Vec epspmlQ, epsmedium, epsC, epsCi, epsP, x, vR, epsSReal;
 extern Mat M, A, D;
 extern char filenameComm[PETSC_MAX_PATH_LEN];
@@ -44,6 +43,9 @@ extern double betai;
 extern Vec weight;
 extern double Qabs;
 
+extern KSP ksp;
+extern PC pc;
+
 #undef __FUNCT__ 
 #define __FUNCT__ "ldosmaxminnkernel"
 double ldosmaxminnkernel(int DegFree,double *epsopt, double *grad, void *data)
@@ -56,9 +58,10 @@ double ldosmaxminnkernel(int DegFree,double *epsopt, double *grad, void *data)
   Vec b = ptmyfundata->Sb;
   Vec weightedJ = ptmyfundata->SweightedJ;
   Vec epscoef = ptmyfundata->Sepscoef;  
-  KSP ksp = ptmyfundata->Sksp;
+  PetscPrintf(PETSC_COMM_WORLD,"current omega in kernel is %.8e \n",omega);
 
   
+
   // copy epsopt to epsSReal;
   ierr=ArrayToVec(epsopt, epsSReal); CHKERRQ(ierr);
 
@@ -75,34 +78,12 @@ double ldosmaxminnkernel(int DegFree,double *epsopt, double *grad, void *data)
   #endif
   /*-----------------KSP Solving------------------*/ 
 
-#if 1 
-  if (its> 15 || count< 15 )
-    {
-      PetscPrintf(PETSC_COMM_WORLD,"Same nonzero pattern, LU is redone! \n");
-      ierr = KSPSetOperators(ksp,Mone,Mone,SAME_NONZERO_PATTERN);CHKERRQ(ierr);}
-  else
-    {ierr = KSPSetOperators(ksp,Mone,Mone,SAME_PRECONDITIONER);CHKERRQ(ierr);}
+  //always use LU decomposition;
+  ierr = KSPSetOperators(ksp,Mone,Mone,SAME_NONZERO_PATTERN);CHKERRQ(ierr);
+  ierr = KSPSolve(ksp,b,x);CHKERRQ(ierr);
+  ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
+  ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations in this step is %D----\n ",its);CHKERRQ(ierr);
 
-   ierr = KSPSolve(ksp,b,x);CHKERRQ(ierr);
-   ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
-   ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations in this step is %D----\n ",its);CHKERRQ(ierr);
-
-#endif
-
-   // if GMRES is stopped due to maxit, then redo it with sparse direct solve;
-#if 1
-  {
-    ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
-    if(its>(maxit-2))
-      {
-	PetscPrintf(PETSC_COMM_WORLD,"Too many iterations needed! Recomputing \n");
-	ierr = KSPSetOperators(ksp,Mone,Mone,SAME_NONZERO_PATTERN);CHKERRQ(ierr);
-	ierr = KSPSolve(ksp,b,x);CHKERRQ(ierr);
-	ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations in this step is %D---\n ",its);CHKERRQ(ierr);
-     }
-  }
-#endif
 
 
   //Print kspsolving information

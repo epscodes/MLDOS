@@ -15,7 +15,7 @@ extern int mma_verbose;
 
 int Job;
 /*-----------------CreateGlobalVariables ----------------*/
-int Nx, Ny, Nz, Nxyz;
+int Nx, Ny, Nz, Nxyz, Nj;
 double hx, hy, hz, hxyz, Qabs;
 double *muinv;
 Vec epspmlQ, epsmedium, epsC, epsCi, epsP, b, x, vR, epsSReal, epsgrad, vgrad, vgradlocal, tmp, tmpa, tmpb, tmpc, weight;
@@ -53,6 +53,9 @@ double betar, betai;
 Mat C;
 int newQdef;
 /*---------*/
+KSP ksp;
+PC pc;
+
 
 /*------------------------------------------------------*/
 
@@ -88,6 +91,8 @@ int main(int argc, char **argv)
 
   Nxyz = Nx*Ny*Nz;
 
+  PetscOptionsGetInt(PETSC_NULL,"-Nj",&Nj,&flg);  MyCheckAndOutputInt(flg,Nx,"Nj","Nj");
+
   // if anisotropic !=0, Degree of Freedom = 3*Mx*My*Mz; else DegFree = Mx*My*Mz;
   PetscOptionsGetInt(PETSC_NULL,"-anisotropic",&anisotropic,&flg);
   if(!flg) anisotropic = 0; // by default, it is isotropc.
@@ -97,11 +102,9 @@ int main(int argc, char **argv)
   int DegFreeAll=DegFree+1;
   PetscPrintf(PETSC_COMM_WORLD," the Degree of Freedoms ALL is %d \n ", DegFreeAll);
 
-  int BCPeriod, Jdirection, Jdirectiontwo, LowerPML;
+  int BCPeriod, LowerPML;
   int bx[2], by[2], bz[2];
   PetscOptionsGetInt(PETSC_NULL,"-BCPeriod",&BCPeriod,&flg);  MyCheckAndOutputInt(flg,BCPeriod,"BCPeriod","BCPeriod given");
-  PetscOptionsGetInt(PETSC_NULL,"-Jdirection",&Jdirection,&flg);  MyCheckAndOutputInt(flg,Jdirection,"Jdirection","Diapole current direction");
-  PetscOptionsGetInt(PETSC_NULL,"-Jdirectiontwo",&Jdirectiontwo,&flg);  MyCheckAndOutputInt(flg,Jdirectiontwo,"Jdirectiontwo","Diapole current direction for source two");
   PetscOptionsGetInt(PETSC_NULL,"-LowerPML",&LowerPML,&flg);  MyCheckAndOutputInt(flg,LowerPML,"LowerPML","PML in the lower xyz boundary");
   PetscOptionsGetInt(PETSC_NULL,"-bxl",bx,&flg);  MyCheckAndOutputInt(flg,bx[0],"bxl","BC at x lower");
   PetscOptionsGetInt(PETSC_NULL,"-bxu",bx+1,&flg);  MyCheckAndOutputInt(flg,bx[1],"bxu","BC at x upper");
@@ -118,12 +121,16 @@ int main(int argc, char **argv)
   hz = hx;
   hxyz = (Nz==1)*hx*hy + (Nz>1)*hx*hy*hz;  
 
-  double omega, omegaone, omegatwo, wratio;
+  double omega;
+  double *omegaarray;
   PetscOptionsGetReal(PETSC_NULL,"-omega",&omega,&flg);  MyCheckAndOutputDouble(flg,omega,"omega","omega");
-   PetscOptionsGetReal(PETSC_NULL,"-wratio",&wratio,&flg);  MyCheckAndOutputDouble(flg,wratio,"wratio","wratio");
-  omegaone=omega;
-  omegatwo=wratio*omega;
-  PetscPrintf(PETSC_COMM_WORLD,"---omegaone is %.16e and omegatwo is %.16e ---\n",omegaone, omegatwo);
+   
+   PetscMalloc(Nj*sizeof(double),&omegaarray);
+   int i;
+   for(i=0;i<Nj;i++)
+     {
+       omegaarray[i]=(i*0.+1)*omega;
+     }
 
   PetscOptionsGetReal(PETSC_NULL,"-Qabs",&Qabs,&flg); 
   if (flg && Qabs>1e+15)
@@ -216,69 +223,6 @@ int main(int argc, char **argv)
   ierr = PetscObjectSetName((PetscObject) J, "Source");CHKERRQ(ierr);
   VecSet(J,0.0); //initialization;
 
-  if (Jdirection == 1)
-    SourceSingleSetX(PETSC_COMM_WORLD, J, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
-  else if (Jdirection ==2)
-    SourceSingleSetY(PETSC_COMM_WORLD, J, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
-  else if (Jdirection == 3)
-    SourceSingleSetZ(PETSC_COMM_WORLD, J, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
-  else
-    PetscPrintf(PETSC_COMM_WORLD," Please specify correct direction of current: x (1) , y (2) or z (3)\n "); 
-
-  Vec Jtwo;
-  ierr = VecDuplicate(J, &Jtwo);CHKERRQ(ierr);
-  ierr = PetscObjectSetName((PetscObject) Jtwo, "Sourcetwo");CHKERRQ(ierr);
-  VecSet(Jtwo,0.0); //initialization;
-
-  if (Jdirectiontwo == 1)
-    SourceSingleSetX(PETSC_COMM_WORLD, Jtwo, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
-  else if (Jdirectiontwo ==2)
-    SourceSingleSetY(PETSC_COMM_WORLD, Jtwo, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
-  else if (Jdirectiontwo == 3)
-    SourceSingleSetZ(PETSC_COMM_WORLD, Jtwo, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
-  else
-    PetscPrintf(PETSC_COMM_WORLD," Please specify correct direction of current two: x (1) , y (2) or z (3)\n "); 
-
-
-  //Vec b; // b= i*omega*J;
-  Vec bone, btwo;
-
-  ierr = VecDuplicate(J,&b);CHKERRQ(ierr);
-  ierr = PetscObjectSetName((PetscObject) b, "rhsone");CHKERRQ(ierr);
-
-  ierr = VecDuplicate(J,&bone);CHKERRQ(ierr);
-  ierr = PetscObjectSetName((PetscObject) bone, "rhsone");CHKERRQ(ierr);
-
-  ierr = VecDuplicate(Jtwo,&btwo);CHKERRQ(ierr);
-  ierr = PetscObjectSetName((PetscObject) btwo, "rhstwo");CHKERRQ(ierr);
-
-  if (cmpwrhs==0)
-    {
-      ierr = MatMult(D,J,b);CHKERRQ(ierr);
-      ierr = MatMult(D,Jtwo,btwo);CHKERRQ(ierr);
-      
-      VecCopy(b,bone);
-      VecScale(bone,omegaone);
-
-      VecScale(btwo,omegatwo);
-
-      VecScale(b,omega);      
-    }
-  else
-    {
-      double complex cmpiomega;
-      cmpiomega = cpow(1+I/Qabs,newQdef+1);
-      double sqrtiomegaR = -omega*cimag(csqrt(cmpiomega));
-      double sqrtiomegaI = omega*creal(csqrt(cmpiomega));
-      PetscPrintf(PETSC_COMM_WORLD,"the real part of sqrt cmpomega is %g and imag sqrt is % g ", sqrtiomegaR, sqrtiomegaI);
-      Vec tmpi;
-      ierr = VecDuplicate(J,&tmpi);
-      VecSet(b,0.0);
-      VecSet(tmpi,0.0);
-      CmpVecScale(J,b,sqrtiomegaR,sqrtiomegaI,D,tmpi);
-      VecDestroy(&tmpi);
-    }
-
   /*-------Get the weight vector ------------------*/
   //Vec weight;
   ierr = VecDuplicate(J,&weight); CHKERRQ(ierr);
@@ -289,15 +233,38 @@ int main(int argc, char **argv)
   else
     VecSet(weight,1.0);
 
-  Vec weightedJ;
-  ierr = VecDuplicate(J,&weightedJ); CHKERRQ(ierr);
-  ierr = VecPointwiseMult(weightedJ,J,weight);
-  ierr = PetscObjectSetName((PetscObject) weightedJ, "weightedJ");CHKERRQ(ierr);
 
-  Vec weightedJtwo;
-  ierr = VecDuplicate(Jtwo,&weightedJtwo); CHKERRQ(ierr);
-  ierr = VecPointwiseMult(weightedJtwo,Jtwo,weight);
-  ierr = PetscObjectSetName((PetscObject) weightedJtwo, "weightedJtwo");CHKERRQ(ierr);
+  Vec Jx, Jy, Jz;
+  ierr = VecDuplicate(J,&Jx); CHKERRQ(ierr);
+  ierr = VecDuplicate(J,&Jy); CHKERRQ(ierr);
+  ierr = VecDuplicate(J,&Jz); CHKERRQ(ierr);
+  SourceSingleSetX(PETSC_COMM_WORLD, Jx, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
+  SourceSingleSetY(PETSC_COMM_WORLD, Jy, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
+  SourceSingleSetZ(PETSC_COMM_WORLD, Jz, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
+ 
+  Vec *Jarray, *barray, *weightedJarray;
+  ierr = VecDuplicateVecs(J,Nj,&Jarray);
+  ierr = VecDuplicateVecs(J,Nj,&barray);
+  ierr = VecDuplicateVecs(J,Nj,&weightedJarray);
+
+
+  for(i=0; i<Nj; i++)
+    {
+      // compute Jarray;
+      ierr =VecSet(Jarray[i],0.0); CHKERRQ(ierr);
+      double theta;
+      theta= (Nj==1) ? 0 : ((PI/2)/(Nj-1)*i);
+      ierr = VecAXPBYPCZ(Jarray[i],cos(theta),sin(theta),0.0,Jx,Jy);CHKERRQ(ierr);
+
+      // compute barray; (only work for cmpwrhs=0;)
+      ierr =VecSet(barray[i],0.0); 
+      ierr = MatMult(D,Jarray[i],barray[i]); CHKERRQ(ierr);
+      ierr =VecScale(barray[i],omegaarray[i]);
+
+      // compute weightedJarray;
+      ierr = VecSet(weightedJarray[i],0.0); CHKERRQ(ierr);
+      ierr = VecPointwiseMult(weightedJarray[i],Jarray[i],weight);
+    }
 
   //Vec vR;
   ierr = VecDuplicate(J,&vR); CHKERRQ(ierr);
@@ -353,13 +320,15 @@ int main(int argc, char **argv)
   ierr = VecDuplicate(J,&epspmlQ);CHKERRQ(ierr);
 
 
-  Vec epscoefone, epscoeftwo;
-  ierr = VecDuplicate(J,&epscoefone);CHKERRQ(ierr);
-  ierr = VecDuplicate(J,&epscoeftwo);CHKERRQ(ierr);
- 
-  // compute epspmlQ,epscoef;
-  EpsCombine(D, weight, epspml, epspmlQ, epscoefone, Qabs, omegaone);
-  EpsCombine(D, weight, epspml, epspmlQ, epscoeftwo, Qabs, omegatwo);
+  Vec *epscoefarray;
+  VecDuplicateVecs(J,Nj,&epscoefarray);
+
+  for (i=0;i<Nj;i++)
+    {
+      ierr = VecSet(epscoefarray[i],0.0);
+      EpsCombine(D,weight,epspml,epspmlQ,epscoefarray[i],Qabs,omegaarray[i]);
+    }
+
   /*--------- Setup the interp matrix ----------------------- */
   /* for a samll eps block, interp it into yee-lattice. The interp matrix A and PML epspml only need to generated once;*/
   
@@ -387,30 +356,19 @@ int main(int argc, char **argv)
 
   /*--------Setup the KSP variables ---------------*/
   
-  KSP kspone;
-  PC pcone; 
-  ierr = KSPCreate(PETSC_COMM_WORLD,&kspone);CHKERRQ(ierr);
+  //KSP ksp;
+  //PC pc; 
+  ierr = KSPCreate(PETSC_COMM_WORLD,&ksp);CHKERRQ(ierr);
   //ierr = KSPSetType(ksp, KSPPREONLY);CHKERRQ(ierr);
-  ierr = KSPSetType(kspone, KSPGMRES);CHKERRQ(ierr);
-  ierr = KSPGetPC(kspone,&pcone);CHKERRQ(ierr);
-  ierr = PCSetType(pcone,PCLU);CHKERRQ(ierr);
-  ierr = PCFactorSetMatSolverPackage(pcone,MATSOLVERPASTIX);CHKERRQ(ierr);
-  ierr = PCSetFromOptions(pcone);
+  ierr = KSPSetType(ksp, KSPGMRES);CHKERRQ(ierr);
+  ierr = KSPGetPC(ksp,&pc);CHKERRQ(ierr);
+  ierr = PCSetType(pc,PCLU);CHKERRQ(ierr);
+  ierr = PCFactorSetMatSolverPackage(pc,MATSOLVERPASTIX);CHKERRQ(ierr);
+  ierr = PCSetFromOptions(pc);
   int maxkspit = 20;
-  ierr = KSPSetTolerances(kspone,1e-14,PETSC_DEFAULT,PETSC_DEFAULT,maxkspit);CHKERRQ(ierr);
-  ierr = KSPSetFromOptions(kspone);CHKERRQ(ierr);
+  ierr = KSPSetTolerances(ksp,1e-14,PETSC_DEFAULT,PETSC_DEFAULT,maxkspit);CHKERRQ(ierr);
+  ierr = KSPSetFromOptions(ksp);CHKERRQ(ierr);
 
-  KSP ksptwo;
-  PC pctwo;
-   ierr = KSPCreate(PETSC_COMM_WORLD,&ksptwo);CHKERRQ(ierr);
-  //ierr = KSPSetType(ksp, KSPPREONLY);CHKERRQ(ierr);
-  ierr = KSPSetType(ksptwo, KSPGMRES);CHKERRQ(ierr);
-  ierr = KSPGetPC(ksptwo,&pctwo);CHKERRQ(ierr);
-  ierr = PCSetType(pctwo,PCLU);CHKERRQ(ierr);
-  ierr = PCFactorSetMatSolverPackage(pctwo,MATSOLVERPASTIX);CHKERRQ(ierr);
-  ierr = PCSetFromOptions(pctwo);
-  ierr = KSPSetTolerances(ksptwo,1e-14,PETSC_DEFAULT,PETSC_DEFAULT,maxkspit);CHKERRQ(ierr);
-  ierr = KSPSetFromOptions(ksptwo);CHKERRQ(ierr);
 
   /*--------- Create the space for solution vector -------------*/
   //Vec x;
@@ -436,14 +394,6 @@ int main(int argc, char **argv)
   ierr = VecDuplicate(J,&tmpa); CHKERRQ(ierr);
   ierr = VecDuplicate(J,&tmpb); CHKERRQ(ierr);
  
-  // Vec pickposvec; this vector is zero except that first entry is one;
-  if (withepsinldos)
-    { ierr = VecDuplicate(J,&pickposvec); CHKERRQ(ierr);
-      ierr = VecSet(pickposvec,0.0); CHKERRQ(ierr);
-      ierr = VecSetValue(pickposvec,posj+Jdirection*Nxyz,1.0,INSERT_VALUES);
-      VecAssemblyBegin(pickposvec);
-      VecAssemblyEnd(pickposvec);
-    }
   /*------------ Create scatter used in the solver -----------*/
   //VecScatter scatter;
   //IS from, to;
@@ -459,7 +409,7 @@ int main(int argc, char **argv)
   ptf = fopen(initialdata,"r");
   PetscPrintf(PETSC_COMM_WORLD,"reading from input files \n");
 
-  int i;
+ 
   // set the dielectric at the center is fixed, and alwyas high
   //epsopt[0]=myub; is defined below near lb and ub;
   for (i=0;i<DegFree;i++)
@@ -487,7 +437,7 @@ int main(int argc, char **argv)
   PetscOptionsGetInt(PETSC_NULL,"-Job",&Job,&flg);  MyCheckAndOutputInt(flg,Job,"Job","The Job indicator you set");
   
   int numofvar=(Job==1)*DegFreeAll + (Job==3);
-
+   myfundatatypemaxminn *data;
   /*--------   convert the epsopt array to epsSReal (if job!=optmization) --------*/
   if (Job==2 || Job ==3)
     {
@@ -542,10 +492,14 @@ int main(int argc, char **argv)
 
       opt = nlopt_create(mynloptalg, numofvar);
       
-      myfundatatypemaxminn data[2] = {{omegaone, bone, weightedJ, epscoefone,kspone},{omegatwo, btwo, weightedJtwo, epscoeftwo,ksptwo}};
+  
+      ierr=PetscMalloc(Nj*sizeof(myfundatatypemaxminn),&data); CHKERRQ(ierr);
 
-      nlopt_add_inequality_constraint(opt,ldosmaxminnconstraint, &data[0], 1e-8);
-      nlopt_add_inequality_constraint(opt,ldosmaxminnconstraint, &data[1], 1e-8);
+      for(i=0;i<Nj;i++)
+	{
+	  data[i]=(myfundatatypemaxminn){omegaarray[i],barray[i],weightedJarray[i],epscoefarray[i]};
+	  nlopt_add_inequality_constraint(opt,ldosmaxminnconstraint, &data[i], 1e-8);
+	}
 
       nlopt_set_lower_bounds(opt,lb);
       nlopt_set_upper_bounds(opt,ub);
@@ -659,7 +613,6 @@ int main(int argc, char **argv)
   ierr = VecDestroy(&J); CHKERRQ(ierr);
   ierr = VecDestroy(&b); CHKERRQ(ierr);
   ierr = VecDestroy(&weight); CHKERRQ(ierr);
-  ierr = VecDestroy(&weightedJ); CHKERRQ(ierr);
   ierr = VecDestroy(&vR); CHKERRQ(ierr);
   ierr = VecDestroy(&epspml); CHKERRQ(ierr);
   ierr = VecDestroy(&epspmlQ); CHKERRQ(ierr);
@@ -678,12 +631,8 @@ int main(int argc, char **argv)
   ierr = MatDestroy(&A); CHKERRQ(ierr);  
   ierr = MatDestroy(&D); CHKERRQ(ierr);
   ierr = MatDestroy(&M); CHKERRQ(ierr);  
- 
+  ierr = KSPDestroy(&ksp);CHKERRQ(ierr);
 
-  ierr = VecDestroy(&epscoefone); CHKERRQ(ierr);
-  ierr = VecDestroy(&epscoeftwo); CHKERRQ(ierr);
-  ierr = KSPDestroy(&kspone);CHKERRQ(ierr);
-  ierr = KSPDestroy(&ksptwo);CHKERRQ(ierr);
 
   ISDestroy(&from);
   ISDestroy(&to);
@@ -700,10 +649,12 @@ int main(int argc, char **argv)
       ierr=MatDestroy(&C); CHKERRQ(ierr);
     }
 
-  ierr = VecDestroy(&bone); CHKERRQ(ierr);
-  ierr = VecDestroy(&btwo); CHKERRQ(ierr);
-  ierr = VecDestroy(&Jtwo); CHKERRQ(ierr);
-  
+  ierr = VecDestroyVecs(Nj,&Jarray); CHKERRQ(ierr);
+  ierr = VecDestroyVecs(Nj,&barray); CHKERRQ(ierr);
+  ierr = VecDestroyVecs(Nj,&weightedJarray); CHKERRQ(ierr);
+  ierr = VecDestroyVecs(Nj,&epscoefarray);CHKERRQ(ierr);
+  ierr = PetscFree(omegaarray); CHKERRQ(ierr);
+  ierr = PetscFree(data); CHKERRQ(ierr);
 
   /*------------ finalize the program -------------*/
 

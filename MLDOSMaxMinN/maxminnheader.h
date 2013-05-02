@@ -3,7 +3,6 @@
 typedef struct{
   double Somega;
   Vec Sb, SweightedJ, Sepscoef;
-  KSP Sksp;
 } myfundatatypemaxminn;
 
 /* in ldoskernel.c */
