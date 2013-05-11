@@ -383,7 +383,7 @@ int main(int argc, char **argv)
 
   // set lower and upper bounds for auxiliary variable;
   lb[numofvar-1]=0;
-  ub[numofvar-1]=1e+4;
+  ub[numofvar-1]=1.0/0.0;
 
   opt = nlopt_create(mynloptalg, numofvar);  
   nlopt_set_lower_bounds(opt,lb);

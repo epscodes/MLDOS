@@ -528,7 +528,7 @@ int main(int argc, char **argv)
 
       // set lower and upper bounds for auxiliary variable;
       lb[numofvar-1]=0;
-      ub[numofvar-1]=1e+4;
+      ub[numofvar-1]=1.0/0.0;
 
       //fix the dielectric at the center to be high for topology optimization;
       if (Job==1 && fixpteps==1)
