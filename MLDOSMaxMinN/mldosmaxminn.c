@@ -190,13 +190,32 @@ int main(int argc, char **argv)
     VecSet(weight,1.0);
 
 
-  Vec Jx, Jy, Jz;
+  Vec Jx, Jy, Jz, Jxm, Jym, Jzm;
   ierr = VecDuplicate(J,&Jx); CHKERRQ(ierr);
   ierr = VecDuplicate(J,&Jy); CHKERRQ(ierr);
-  ierr = VecDuplicate(J,&Jz); CHKERRQ(ierr);
+  ierr = VecDuplicate(J,&Jz); CHKERRQ(ierr);  
+
   SourceSingleSetX(PETSC_COMM_WORLD, Jx, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
   SourceSingleSetY(PETSC_COMM_WORLD, Jy, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
   SourceSingleSetZ(PETSC_COMM_WORLD, Jz, Nx, Ny, Nz, cx, cy, cz,1.0/hxyz);
+
+ /* Jx=(Jx+Jxm)/2, where Jxm is Jx shift down 1 pixel, so that new Jx, Jy, Jz are roughly at same location, instead of staggerred. */
+
+  if(sameomega)
+    {   
+      ierr = VecDuplicate(J,&Jxm); CHKERRQ(ierr);
+      ierr = VecDuplicate(J,&Jym); CHKERRQ(ierr);
+      ierr = VecDuplicate(J,&Jzm); CHKERRQ(ierr);
+      SourceSingleSetX(PETSC_COMM_WORLD, Jxm, Nx, Ny, Nz, cx-1, cy, cz,1.0/hxyz);
+      SourceSingleSetY(PETSC_COMM_WORLD, Jym, Nx, Ny, Nz, cx, cy-1, cz,1.0/hxyz);
+      SourceSingleSetZ(PETSC_COMM_WORLD, Jzm, Nx, Ny, Nz, cx, cy, cz-1,1.0/hxyz);
+      ierr = VecAXPBY(Jx,1.0,1.0,Jxm); CHKERRQ(ierr);
+      ierr = VecAXPBY(Jy,1.0,1.0,Jym); CHKERRQ(ierr);
+      ierr = VecAXPBY(Jz,1.0,1.0,Jzm); CHKERRQ(ierr);
+      ierr = VecDestroy(&Jxm);CHKERRQ(ierr);
+      ierr = VecDestroy(&Jym);CHKERRQ(ierr);
+      ierr = VecDestroy(&Jzm);CHKERRQ(ierr);
+    }
  
   int Jdirection;
   PetscOptionsGetInt(PETSC_NULL,"-Jdirection",&Jdirection,&flg);  
