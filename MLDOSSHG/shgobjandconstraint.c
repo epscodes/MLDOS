@@ -14,19 +14,6 @@ double maxminobjfun(int DegFreeAll,double *epsoptAll, double *gradAll, void *dat
       gradAll[DegFreeAll-1]=1;
     }
   
-  int myrank;
-  MPI_Comm_rank(PETSC_COMM_WORLD,&myrank);
-  if(myrank==0)
-    {
-      int i;
-      FILE *ptf;
-      ptf = fopen("testobjgrad.txt","w");
-      for (i=0;i<DegFreeAll;i++)
-	fprintf(ptf,"%0.16e \n",gradAll[i]);
-      fclose(ptf);
-
-    }
-
   PetscPrintf(PETSC_COMM_WORLD,"**the current objective value is %.8e**\n",epsoptAll[DegFreeAll-1]);
 
   return epsoptAll[DegFreeAll-1];
