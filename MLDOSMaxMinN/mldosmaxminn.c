@@ -158,7 +158,15 @@ int main(int argc, char **argv)
     {PetscPrintf(PETSC_COMM_WORLD,"the current poisiont cz is %d \n",cz);}
     
   posj = (cx*Ny+ cy)*Nz + cz;
-  PetscPrintf(PETSC_COMM_WORLD,"the posj is %d \n. ", posj);
+  PetscPrintf(PETSC_COMM_WORLD,"the posj is %d. \n", posj);
+
+  /* get Job for linear (default) or eig (=2) */
+  PetscOptionsGetInt(PETSC_NULL,"-Job",&Job,&flg);
+  PetscPrintf(PETSC_COMM_WORLD,"the Job id you have is %d \n",Job);
+  int sid=1;
+  PetscOptionsGetInt(PETSC_NULL,"-sid",&sid,&flg);
+  if (Job==1)
+  PetscPrintf(PETSC_COMM_WORLD,"the %d-th current is the one you want compute eigenvector \n",sid);
 
   /*--------------------------------------------------------*/
   // Get outputbase;
@@ -432,9 +440,17 @@ int main(int argc, char **argv)
  
 
   /* run the optimization */
-  nlopt_set_max_objective(opt,maxminnobjfun,NULL);
-  result = nlopt_optimize(opt,epsoptAll,&maxf);
- 
+  if (Job==2)
+    {
+      // copy epsopt to epsSReal;
+      ierr=ArrayToVec(epsoptAll, epsSReal); CHKERRQ(ierr);
+      MaxMinNEigenSolver(1,1,10,&data[sid-1]);
+    }
+  else
+    {
+      nlopt_set_max_objective(opt,maxminnobjfun,NULL);
+      result = nlopt_optimize(opt,epsoptAll,&maxf);
+    }
   /* print the optimization parameters */
 #if 0
   double xrel, frel, fabs;
