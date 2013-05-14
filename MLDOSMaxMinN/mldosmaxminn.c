@@ -240,7 +240,7 @@ int main(int argc, char **argv)
       // compute Jarray;
       ierr =VecSet(Jarray[i],0.0); CHKERRQ(ierr);
       double theta;
-      theta= (Nj==1) ? 0 : ((PI/2)/(Nj-1)*i);
+      theta= (Nj==1) ? 0 : ((PI)/(Nj-1)*i);
       if(sameomega)
 	{ierr = VecAXPBYPCZ(Jarray[i],cos(theta),sin(theta),0.0,Jx,Jy);CHKERRQ(ierr);}
       else
