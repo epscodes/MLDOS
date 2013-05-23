@@ -1,9 +1,10 @@
 all: MLDOSSHGOpt
 
-export PETSC_DIR=/home/xdliang/MyLocal/petsc-dev
+export PETSC_DIR=${HOME}/MyLocal/petsc-dev
 export PETSC_ARCH=arch-opt
-export CavityLibPath=/home/xdliang/MyCodes/CavityPETScCodesDev_0/CodesForLibrary
+export CavityLibPath=../CodesForLibrary
 export NloptLibPath=${HOME}/MyLocal/nlopt_0/.libs
+export C_INCLUDE_PATH=${HOME}/MyLocal/include
 
 include ${PETSC_DIR}/conf/variables
 include ${PETSC_DIR}/conf/rules

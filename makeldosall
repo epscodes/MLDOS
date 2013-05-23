@@ -1,11 +1,11 @@
 #! /bin/bash
 
-export PETSC_DIR=/home/xdliang/MyLocal/petsc-dev
+export PETSC_DIR=${HOME}/MyLocal/petsc-dev
 export PETSC_ARCH=arch-opt
 export CavityLibPath=$PWD/CodesForLibrary
 #export SLEPC_DIR=/home/xdliang/MyLocal/slepc/slepc-3.1-p6
 export NloptLibPath=${HOME}/MyLocal/nlopt_0/.libs
-
+export C_INCLUDE_PATH=${HOME}/MyLocal/include
 
 cd CodesForLibrary
 bash makelibcavity
