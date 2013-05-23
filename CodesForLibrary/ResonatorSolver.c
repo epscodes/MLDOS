@@ -73,7 +73,7 @@ double ResonatorSolver(int DegFree,double *epsopt, double *grad, void *data)
 
    ierr = KSPSolve(ksp,b,x);CHKERRQ(ierr);
    ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
-   ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations in this step is %D----\n ",its);CHKERRQ(ierr);
+   ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations in this step is %d----\n ",its);CHKERRQ(ierr);
 
 #endif
 
@@ -87,7 +87,7 @@ double ResonatorSolver(int DegFree,double *epsopt, double *grad, void *data)
 	ierr = KSPSetOperators(ksp,M,M,SAME_NONZERO_PATTERN);CHKERRQ(ierr);
 	ierr = KSPSolve(ksp,b,x);CHKERRQ(ierr);
 	ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations in this step is %D---\n ",its);CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations in this step is %d---\n ",its);CHKERRQ(ierr);
      }
   }
 #endif
