@@ -110,9 +110,9 @@ int main(int argc, char **argv)
   nkxyz = nkx * nky * nkz;
   
   //PetscOptionsGetReal(PETSC_NULL,"-kxstep",&kxstep,&flg);  MyCheckAndOutputDouble(flg,kxstep,"kxstep","kxstep");
-  kxstep = Nx*hx/nkx;
-  kystep = Ny*hy/nky;
-  kzstep = Nz*hz/nkz;
+  kxstep = 1/(Nx*hx)/nkx;
+  kystep = 1/(Ny*hy)/nky;
+  kzstep = 1/(Nz*hz)/nkz;
   kxyzstep = (Nz==1)*kxstep*kystep + (Nz>1)*kxstep*kystep*kzstep;  
 
  PetscOptionsGetReal(PETSC_NULL,"-kxbase",&kxbase,&flg);  MyCheckAndOutputDouble(flg,kxbase,"kxbase","kxbase");
