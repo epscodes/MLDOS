@@ -8,6 +8,8 @@ cp Resonator.h ../MLDOS/
 cp Resonator.h ../MLSUM/
 cp Resonator.h ../MLDOSSHG/
 cp Resonator.h ../MLDOSMaxMinN/
+cp Resonator.h ../MLDOSSolar/
+
 #cp Resonator.h ../MLDOSRHS/
 #cp Resonator.h ../MLDOSPOLXY/
 #cp Resonator.h ../MLDOSSolar/

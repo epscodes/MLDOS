@@ -18,9 +18,7 @@ bash makelibcavity
 
 #cd ../MLDOSPOLXY make clean make
 
-cd ../MLDOSSolar
-make clean
-make
+#cd ../MLDOSSolar make clean make
 
 #cd ../MLDOSPre make clean make
 
