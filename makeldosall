@@ -10,19 +10,17 @@ export C_INCLUDE_PATH=${HOME}/MyLocal/include
 cd CodesForLibrary
 bash makelibcavity
 
-cd ../MLDOS 
-make clean
-make
+#cd ../MLDOS make clean make
 
-cd ../MLSUM
-make clean
-make
+#cd ../MLSUM make clean make
 
 #cd ../MLDOSRHS make clean make
 
 #cd ../MLDOSPOLXY make clean make
 
-#cd ../MLDOSSolar make clean make
+cd ../MLDOSSolar
+make clean
+make
 
 #cd ../MLDOSPre make clean make
 

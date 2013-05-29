@@ -2,6 +2,7 @@
 #include <time.h>
 #include "Resonator.h"
 #include <mpi.h>
+#include "../MLDOSSolar/solarheader.h"
 
 extern int count;
 extern int its;
@@ -28,6 +29,10 @@ extern int NeedEig;
 
 extern int commsz, myrank, mygroup, myid, numgroups; 
 extern MPI_Comm comm_group, comm_sum;
+
+extern int weightappid;
+extern double hw; //half width of my smoothed step function;
+
 
 #undef __FUNCT__ 
 #define __FUNCT__ "ResonatorSolverSolar2D"
@@ -249,8 +254,9 @@ int SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, doub
       VecDot(tmp,epsCurrent,&epsjloc); 
 
       // maximize real(E*eps*J) = x*(epsSReal+1)*J; use J, not weightedJ;
+      // maximize x*J*boweight, where boweight=1,epsSReal+1, or step function.
       VecDot(x,J,&tldos);
-      tldos = -1.0*epsjloc*tldos*hxyz;
+      tldos = -1.0*hxyz*tldos*boweightfun(epsjloc);
       *ptkldos += tldos;
 
       //PetscPrintf(PETSC_COMM_WORLD,"---The current ldos at step %d (current position %d) is %.16e \n", count, i, tldos);
@@ -269,15 +275,18 @@ int SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, doub
 	  CmpVecProd(x,tmp,tepsgrad,D2D,aconj,tmpa,tmpb);
 	  // tepsgrad is the old derivate; new derivative = eps_center*tepsgrad + ldos_c;
 	  // where ldos_c is a zero vector except at one postion = ldos;
-	  VecScale(tepsgrad,epsjloc*hxyz);
-
+	
 	  VecSet(tmp,0.0);
 	  VecSetValue(tmp,JRandPos[i],1.0,INSERT_VALUES);
 	  VecAssemblyBegin(tmp);
 	  VecAssemblyEnd(tmp);
-	  VecScale(tmp, tldos/epsjloc);
- 
-	  VecAXPY(tepsgrad,1.0,tmp); // tepsgrad(i) = tepsgrad(i) + tldos/epsjloc;
+
+	  /*derivative has two terms */
+	  VecScale(tepsgrad,hxyz*boweightfun(epsjloc));
+	  VecScale(tmp, tldos*boweightfundev(epsjloc)/(boweightfun(epsjloc)+1e-10));
+	  VecAXPY(tepsgrad,1.0,tmp);  
+
+
 	  VecAXPY(kepsgrad,1.0,tepsgrad); // epsgrad+=tepsgrad;
 	 
 	  ierr=VecDestroy(&tepsgrad);CHKERRQ(ierr);
@@ -314,6 +323,64 @@ int SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, doub
   ierr=KSPDestroy(&ksp);CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
+}
+
+
+#undef _FUNCT_
+#define _FUNCT_ "boweightfun"
+double boweightfun(double epsjloc)
+{
+  double rv=0;
+  if (weightappid==0)
+    rv = 1;
+  else if (weightappid==1)
+    rv = epsjloc;
+  else if (weightappid==2)
+    rv = smoothstepfun(epsjloc);
+  return rv;
+}
+
+#undef _FUNCT_
+#define _FUNCT_ "boweightfundev"
+double boweightfundev(double epsjloc)
+{
+  double rv=0;
+  if (weightappid==0)
+    rv = 0;
+  else if (weightappid==1)
+    rv = 1;
+  else if (weightappid==2)
+    rv = smoothstepfundev(epsjloc);
+  return rv;
+}
+
+double smoothstepfun(double x)
+{
+  x = x-1;
+  /*w = 1*(x<=0) +  (x>2*halfwidth)*0 ...
+    + ( 1-x/(2*halfwidth) + 1/(2*pi)*sin(pi*x/halfwidth)).*(x>0 & x<=2*halfwidth);
+ */
+  double rv;
+  if (x<=0)
+    rv=1;
+  else if (x > 2*hw)
+    rv=0;
+  else
+    rv=1-x/(2*hw) + 1/(2*PI)*sin(PI*x/hw);
+  return rv;
+}
+
+double smoothstepfundev(double x)
+{
+  x = x-1; 
+  double rv;
+  if (x<=0)
+    rv=0;
+  else if (x > 2*hw)
+    rv=0;
+  else
+    rv=-1/(2*hw) + 1/(2*hw)*cos(PI*x/hw);
+  return rv;
 }
 
 

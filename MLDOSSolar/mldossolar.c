@@ -3,6 +3,7 @@
 #include <string.h>
 #include <nlopt.h>
 #include "Resonator.h"
+#include "solarheader.h"
 //#include <slepc.h>
 //#include <slepceps.h>
 
@@ -36,6 +37,14 @@ int NeedEig;
 int commsz, myrank, mygroup, myid, numgroups; 
 MPI_Comm comm_group, comm_sum;
 
+/*---------global variables for BoWeight----------*/
+int weightappid; // 0 (0), eps (1), stepfun preferring low dielectric (2);
+double hw; // half width;
+
+/*some global variables declaration in Eps.c, not really needed. */
+int newQdef=0;
+int lrzsqr=0;
+Vec epsFReal;
 
 #undef __FUNCT__ 
 #define __FUNCT__ "main" 
@@ -110,14 +119,14 @@ int main(int argc, char **argv)
   nkxyz = nkx * nky * nkz;
   
   //PetscOptionsGetReal(PETSC_NULL,"-kxstep",&kxstep,&flg);  MyCheckAndOutputDouble(flg,kxstep,"kxstep","kxstep");
-  kxstep = 1/(Nx*hx)/nkx;
-  kystep = 1/(Ny*hy)/nky;
-  kzstep = 1/(Nz*hz)/nkz;
+  kxstep = 1.0/(Nx*hx)/nkx;
+  kystep = 1.0/(Ny*hy)/nky;
+  kzstep = 1.0/(Nz*hz)/nkz;
   kxyzstep = (Nz==1)*kxstep*kystep + (Nz>1)*kxstep*kystep*kzstep;  
 
- PetscOptionsGetReal(PETSC_NULL,"-kxbase",&kxbase,&flg);  MyCheckAndOutputDouble(flg,kxbase,"kxbase","kxbase");
-PetscOptionsGetReal(PETSC_NULL,"-kybase",&kybase,&flg);  MyCheckAndOutputDouble(flg,kybase,"kybase","kybase");
-PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(flg,kzbase,"kzbase","kzbase");
+  PetscOptionsGetReal(PETSC_NULL,"-kxbase",&kxbase,&flg);  MyCheckAndOutputDouble(flg,kxbase,"kxbase","kxbase");
+  PetscOptionsGetReal(PETSC_NULL,"-kybase",&kybase,&flg);  MyCheckAndOutputDouble(flg,kybase,"kybase","kybase");
+  PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(flg,kzbase,"kzbase","kzbase");
 
  PetscOptionsGetInt(PETSC_NULL,"-TMID",&TMID,&flg);  MyCheckAndOutputInt(flg,TMID,"TMID","TMID");
  PetscOptionsGetInt(PETSC_NULL,"-NeedEig",&NeedEig,&flg);  MyCheckAndOutputInt(flg,NeedEig,"NeedEig","NeedEig");
@@ -127,6 +136,11 @@ PetscOptionsGetReal(PETSC_NULL,"-kzbase",&kzbase,&flg);  MyCheckAndOutputDouble(
  // set up MPI slpit;
  mympisetup();
  PetscPrintf(PETSC_COMM_WORLD,"MPI split is set up !\n");
+
+ // get variables for BoWeight;
+ PetscOptionsGetInt(PETSC_NULL,"-weightappid",&weightappid,&flg);  MyCheckAndOutputInt(flg,weightappid,"weightappid","weightappid");
+ PetscOptionsGetReal(PETSC_NULL,"-hw",&hw,&flg);  MyCheckAndOutputDouble(flg,hw,"hw","hw");
+
   /*--------------------------------------------------------*/
 
  if (myrank==0)
