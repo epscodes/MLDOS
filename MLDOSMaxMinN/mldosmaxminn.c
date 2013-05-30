@@ -235,12 +235,21 @@ int main(int argc, char **argv)
   ierr = VecDuplicateVecs(J,Nj,&barray);
   ierr = VecDuplicateVecs(J,Nj,&weightedJarray);
 
+  int Njboundary;
+  PetscOptionsGetInt(PETSC_NULL,"-Njboundary",&Njboundary,&flg);  
+  if(!flg) Njboundary = 1; // by default, the Njboundary is 1.
+  PetscPrintf(PETSC_COMM_WORLD,"---the variable Njboundary is %d ---\n",Njboundary);
+
   for(i=0; i<Nj; i++)
     {
       // compute Jarray;
       ierr =VecSet(Jarray[i],0.0); CHKERRQ(ierr);
       double theta;
-      theta= (Nj==1) ? 0 : ((PI)/(Nj-1)*i);
+      if (Njboundary)
+	theta = (Nj==1) ? 0 : ((PI)/(Nj-1)*i);
+      else
+	theta = PI/Nj*i;
+
       if(sameomega)
 	{ierr = VecAXPBYPCZ(Jarray[i],cos(theta),sin(theta),0.0,Jx,Jy);CHKERRQ(ierr);}
       else
