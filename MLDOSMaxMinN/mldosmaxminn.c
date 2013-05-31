@@ -240,6 +240,11 @@ int main(int argc, char **argv)
   if(!flg) Njboundary = 1; // by default, the Njboundary is 1.
   PetscPrintf(PETSC_COMM_WORLD,"---the variable Njboundary is %d ---\n",Njboundary);
 
+  double phase;
+  PetscOptionsGetReal(PETSC_NULL,"-phase",&phase,&flg);  
+  if(!flg) phase = 0; // by default, the inital phase is 0.
+  PetscPrintf(PETSC_COMM_WORLD,"---the variable phase is %.12e ---\n",phase);
+
   for(i=0; i<Nj; i++)
     {
       // compute Jarray;
@@ -251,7 +256,10 @@ int main(int argc, char **argv)
 	theta = PI/Nj*i;
 
       if(sameomega)
-	{ierr = VecAXPBYPCZ(Jarray[i],cos(theta),sin(theta),0.0,Jx,Jy);CHKERRQ(ierr);}
+	{
+	  theta = theta + phase; // with phase, the inital direction is phase.
+	  ierr = VecAXPBYPCZ(Jarray[i],cos(theta),sin(theta),0.0,Jx,Jy);CHKERRQ(ierr);
+	}
       else
 	{ 
 	  if(Jdirection==1)
