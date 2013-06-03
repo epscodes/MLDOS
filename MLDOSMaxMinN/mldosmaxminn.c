@@ -461,7 +461,11 @@ int main(int argc, char **argv)
     {
       // copy epsopt to epsSReal;
       ierr=ArrayToVec(epsoptAll, epsSReal); CHKERRQ(ierr);
-      MaxMinNEigenSolver(1,1,10,&data[sid-1]);
+      int maxeigit;
+      PetscOptionsGetInt(PETSC_NULL,"-maxeigit",&maxeigit,&flg);
+      if (!flg) maxeigit=10;
+      PetscPrintf(PETSC_COMM_WORLD,"---maxeigit you set for eigenvalue inverse iteration is %d---\n",maxeigit);
+      MaxMinNEigenSolver(1,1,maxeigit,&data[sid-1]);
     }
   else
     {
