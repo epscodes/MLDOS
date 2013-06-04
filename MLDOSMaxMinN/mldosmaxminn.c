@@ -165,7 +165,7 @@ int main(int argc, char **argv)
   PetscPrintf(PETSC_COMM_WORLD,"the Job id you have is %d \n",Job);
   int sid=1;
   PetscOptionsGetInt(PETSC_NULL,"-sid",&sid,&flg);
-  if (Job==1)
+  if (Job==2)
   PetscPrintf(PETSC_COMM_WORLD,"the %d-th current is the one you want compute eigenvector \n",sid);
 
   /*--------------------------------------------------------*/
