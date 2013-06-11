@@ -47,7 +47,7 @@ PetscErrorCode MoperatorGeneralBloch(MPI_Comm comm, Mat *Aout, int Nx, int Ny, i
    /*-------------------------------------*/
 
 
-  //ierr = MatCreateMPIAIJ(PETSC_COMM_WORLD, PETSC_DECIDE, PETSC_DECIDE, Nxyzcr, Nxyzcr, 26, NULL, 26, NULL, &A); CHKERRQ(ierr);
+  //ierr = MatCreateAIJ(PETSC_COMM_WORLD, PETSC_DECIDE, PETSC_DECIDE, Nxyzcr, Nxyzcr, 26, NULL, 26, NULL, &A); CHKERRQ(ierr);
   MatCreate(comm, &A);
   MatSetType(A,MATMPIAIJ);
   MatSetSizes(A,PETSC_DECIDE, PETSC_DECIDE, Nxyzcr, Nxyzcr);

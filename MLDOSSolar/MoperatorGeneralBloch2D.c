@@ -51,7 +51,7 @@ PetscErrorCode MoperatorGeneralBloch2D(MPI_Comm comm, Mat *Aout, int Nx, int Ny,
    /*-------------------------------------*/
 
 
-  //ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, 2*Nxyz, 2*Nxyz, 10, NULL, 10, NULL, &A); CHKERRQ(ierr);
+  //ierr = MatCreateAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, 2*Nxyz, 2*Nxyz, 10, NULL, 10, NULL, &A); CHKERRQ(ierr);
 
   MatCreate(comm, &A);
   MatSetType(A,MATMPIAIJ);

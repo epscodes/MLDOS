@@ -54,7 +54,7 @@ PetscErrorCode myinterp(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, int Nx
   int Mxyz =  Mx*My*((Mzslab==0)?Mz:1);  
   int DegFree= (anisotropic ? 3 : 1)* Mxyz; 
  
-  //ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, Nx*Ny*Nz*6, Mxyz, nz, NULL, nz, NULL, &A); CHKERRQ(ierr);
+  //ierr = MatCreateAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, Nx*Ny*Nz*6, Mxyz, nz, NULL, nz, NULL, &A); CHKERRQ(ierr);
   
   MatCreate(comm, &A);
   MatSetType(A,MATMPIAIJ);
@@ -297,7 +297,7 @@ PetscErrorCode myinterpTM2D(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nxo, i
 
   int Mxy=Mx*My; 
  
-  //ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, Nx*Ny*2, Mxy, nz, NULL, nz, NULL, &ATM2D); CHKERRQ(ierr);
+  //ierr = MatCreateAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, Nx*Ny*2, Mxy, nz, NULL, nz, NULL, &ATM2D); CHKERRQ(ierr);
 
   MatCreate(comm, &ATM2D);
   MatSetType(ATM2D,MATMPIAIJ);

@@ -200,7 +200,7 @@ PetscErrorCode yee_interp(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, doub
   int Nc = 3; //modified;
 
      
-  ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE,
+  ierr = MatCreateAIJ(comm, PETSC_DECIDE, PETSC_DECIDE,
 			 Nx*Ny*Nz*6, Mx*My*Mz,
 			 nz, NULL, nz, NULL, &A); CHKERRQ(ierr);
      
@@ -266,7 +266,7 @@ PetscErrorCode General_interp(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, 
   int i;
   int Nc = 3; //new modified;
      
-  ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE,
+  ierr = MatCreateAIJ(comm, PETSC_DECIDE, PETSC_DECIDE,
 			 Nx*Ny*Nz*6, Mx*My*Mz,
 			 nz, NULL, nz, NULL, &A); CHKERRQ(ierr);
      
@@ -323,7 +323,7 @@ PetscErrorCode myinterpSlab(MPI_Comm comm, Mat *Aout, int Nx, int Ny, int Nz, in
   int Nc = 3; //modified;
 
      
-  ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE,
+  ierr = MatCreateAIJ(comm, PETSC_DECIDE, PETSC_DECIDE,
 			 Nx*Ny*Nz*6, Mx*My*Mz,
 			 nz, NULL, nz, NULL, &A); CHKERRQ(ierr);
      

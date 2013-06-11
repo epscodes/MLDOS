@@ -22,7 +22,7 @@ int SolarEigenvaluesSolver(Mat M, Vec epsCurrent, Vec epspmlQ, Mat D)
 
   ierr=MatGetSize(M,&nrow, &ncol); CHKERRQ(ierr);
 
-  ierr=MatCreateMPIAIJ(PETSC_COMM_WORLD, PETSC_DECIDE, PETSC_DECIDE, nrow, ncol, 1, NULL, 1, NULL, &B); CHKERRQ(ierr);
+  ierr=MatCreateAIJ(PETSC_COMM_WORLD, PETSC_DECIDE, PETSC_DECIDE, nrow, ncol, 1, NULL, 1, NULL, &B); CHKERRQ(ierr);
   ierr=PetscObjectSetName((PetscObject)B, "epsmatrix"); CHKERRQ(ierr);
 
   if (D==PETSC_NULL)

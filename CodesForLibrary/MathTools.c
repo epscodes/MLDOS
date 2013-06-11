@@ -57,7 +57,7 @@ PetscErrorCode ImagIMat(MPI_Comm comm, Mat *Dout, int N)
   int ns, ne;  
   int i;
      
-  //ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, N,N,nz, NULL, nz, NULL, &D); CHKERRQ(ierr); // here N is total length;
+  //ierr = MatCreateAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, N,N,nz, NULL, nz, NULL, &D); CHKERRQ(ierr); // here N is total length;
   
   MatCreate(comm, &D);
   MatSetType(D,MATMPIAIJ);
@@ -93,7 +93,7 @@ PetscErrorCode CongMat(MPI_Comm comm, Mat *Cout, int N)
   int ns, ne;  
   int i;
      
-  //ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, N,N,nz, NULL, nz, NULL, &C); CHKERRQ(ierr);
+  //ierr = MatCreateAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, N,N,nz, NULL, nz, NULL, &C); CHKERRQ(ierr);
   
   MatCreate(comm, &C);
   MatSetType(C,MATMPIAIJ);
@@ -288,7 +288,7 @@ PetscErrorCode TMprojmat(MPI_Comm comm, Mat *TMout, int Nxyz)
   int nnz = 1;
   PetscErrorCode ierr;
   int i, ns, ne;
-  //ierr = MatCreateMPIAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, 2*Nxyz, 6*Nxyz, nnz, NULL, nnz, NULL, &TM); CHKERRQ(ierr);
+  //ierr = MatCreateAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, 2*Nxyz, 6*Nxyz, nnz, NULL, nnz, NULL, &TM); CHKERRQ(ierr);
 
   MatCreate(comm, &TM);
   MatSetType(TM,MATMPIAIJ);
