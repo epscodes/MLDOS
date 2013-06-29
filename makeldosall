@@ -1,6 +1,6 @@
 #! /bin/bash
 
-export PETSC_DIR=${HOME}/MyLocal/petsc-dev
+export PETSC_DIR=${HOME}/MyLocal/petsc/petsc-3.3-p7
 export PETSC_ARCH=arch-opt
 export CavityLibPath=$PWD/CodesForLibrary
 #export SLEPC_DIR=/home/xdliang/MyLocal/slepc/slepc-3.1-p6
