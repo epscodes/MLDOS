@@ -4,8 +4,8 @@
 #include <nlopt.h>
 #include "Resonator.h"
 #include "solarheader.h"
-//#include <slepc.h>
-//#include <slepceps.h>
+#include <slepc.h>
+#include <slepceps.h>
 
 int count=1;
 int its=100;
@@ -51,7 +51,7 @@ Vec epsFReal;
 int main(int argc, char **argv)
 {
   /* -------Initialize and Get the parameters from command line ------*/
-  PetscInitialize(&argc, &argv, PETSC_NULL, PETSC_NULL);
+  SlepcInitialize(&argc, &argv, PETSC_NULL, PETSC_NULL);
   PetscPrintf(PETSC_COMM_WORLD,"--------Initializing------ \n");
   PetscErrorCode ierr;
   PetscBool flg;
@@ -339,7 +339,7 @@ int main(int argc, char **argv)
   }
 
   PetscPrintf(PETSC_COMM_WORLD,"nlopt returned value is %d \n", result);
-
+  
   int rankA;
   MPI_Comm_rank(PETSC_COMM_WORLD, &rankA);
 
@@ -398,7 +398,7 @@ int main(int argc, char **argv)
     MPI_Barrier(PETSC_COMM_WORLD);
   }
   
-  ierr = PetscFinalize(); CHKERRQ(ierr);
+  ierr = SlepcFinalize(); CHKERRQ(ierr);
 
   return 0;
 }

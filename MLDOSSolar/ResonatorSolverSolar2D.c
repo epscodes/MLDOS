@@ -206,9 +206,12 @@ int SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, doub
   // constrcut M = curl \muinv curl - eps*omega^2 operator based on k;
   MoperatorGeneralBloch2D(comm_group, &M, Nx, Ny, Nz, hx, hy, hz, bx,by, bz, muinv, BCPeriod, blochbc, epsOmegasqr, epsOmegasqri);
 
-  //if (NeedEig==1)
-  //SolarEigenvaluesSolver(M,epsCurrent, epspmlQ2D, D2D);
-  
+  if (NeedEig==1)
+    {
+      SolarEigenvaluesSolver(M,epsCurrent, epspmlQ2D, D2D);
+    }
+  else
+    {
   // I always use LU decompostion;
   //PetscPrintf(PETSC_COMM_WORLD,"Same nonzero pattern, LU is redone! \n");
   ierr = KSPSetOperators(ksp,M,M,SAME_NONZERO_PATTERN);CHKERRQ(ierr); 
@@ -309,9 +312,9 @@ int SolarComputeKernel2D(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, doub
   *ptkldos = *ptkldos/NJ;
   if (kepsgrad != NULL)
     VecScale(kepsgrad,1.0/NJ);
- 
+  
   //PetscPrintf(PETSC_COMM_WORLD," tpkldos is %.16e\n ", *ptkldos);
-
+    }
   //Destroy Stuff;
   ierr=VecDestroy(&J);CHKERRQ(ierr);
   ierr=VecDestroy(&b);CHKERRQ(ierr);

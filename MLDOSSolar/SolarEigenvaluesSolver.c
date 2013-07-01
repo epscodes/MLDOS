@@ -2,6 +2,7 @@
 #include "slepceps.h"
 #include "Resonator.h"
 
+extern double omega;
 
 /*---this subrountie compute the eigenvalues lambda of the generalized eigenvalue problem (M-eps*omega_0^2) V = eps*lambda * V. In order to compute with mpb, user need to convert like this sqrt(lambda+omega_0^2)/(2*pi). */
 
@@ -12,9 +13,6 @@ int SolarEigenvaluesSolver(Mat M, Vec epsCurrent, Vec epspmlQ, Mat D)
 
   PetscErrorCode ierr;
   EPS eps;
-  const EPSType type;
-  PetscReal error, tol, re, im;
-  PetscScalar kr,  ki;
   PetscInt nconv;
 
   Mat B;
@@ -22,7 +20,7 @@ int SolarEigenvaluesSolver(Mat M, Vec epsCurrent, Vec epspmlQ, Mat D)
 
   ierr=MatGetSize(M,&nrow, &ncol); CHKERRQ(ierr);
 
-  ierr=MatCreateAIJ(PETSC_COMM_WORLD, PETSC_DECIDE, PETSC_DECIDE, nrow, ncol, 1, NULL, 1, NULL, &B); CHKERRQ(ierr);
+  ierr=MatCreateAIJ(PETSC_COMM_WORLD, PETSC_DECIDE, PETSC_DECIDE, nrow, ncol, 2, NULL, 2, NULL, &B); CHKERRQ(ierr);
   ierr=PetscObjectSetName((PetscObject)B, "epsmatrix"); CHKERRQ(ierr);
 
   if (D==PETSC_NULL)
@@ -38,7 +36,7 @@ int SolarEigenvaluesSolver(Mat M, Vec epsCurrent, Vec epspmlQ, Mat D)
       ierr = VecPointwiseMult(epsC, epsCurrent,epspmlQ); CHKERRQ(ierr);
       
       MatSetTwoDiagonals(B, epsC, D, 1.0);
-      VecDestroy(epsC);
+      VecDestroy(&epsC);
     }
 
 
@@ -83,6 +81,11 @@ int SolarEigenvaluesSolver(Mat M, Vec epsCurrent, Vec epspmlQ, Mat D)
   for(ni=0; ni<nconv; ni++)
     PetscPrintf(PETSC_COMM_WORLD," %g%+gi,", krarray[ni], kiarray[ni]);
 
+  PetscPrintf(PETSC_COMM_WORLD, "\n\nNow print the normalized eigenvalues: \n");
+  for(ni=0; ni<nconv; ni++)
+    PetscPrintf(PETSC_COMM_WORLD," %g%+gi,", sqrt(krarray[ni]+pow(omega,2))/(2*PI),kiarray[ni]);
+
+
   PetscPrintf(PETSC_COMM_WORLD, "\n\nstart printing erros");
 
   for(ni=0; ni<nconv; ni++)
@@ -91,8 +94,8 @@ int SolarEigenvaluesSolver(Mat M, Vec epsCurrent, Vec epspmlQ, Mat D)
   PetscPrintf(PETSC_COMM_WORLD,"\n\n Finish EPS Solving !!! \n\n");
 
   /*-- destroy vectors and free space --*/
-  EPSDestroy(eps);
-  MatDestroy(B);
+  EPSDestroy(&eps);
+  MatDestroy(&B);
 
   free(krarray);
   free(kiarray);
