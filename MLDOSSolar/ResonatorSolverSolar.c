@@ -62,7 +62,7 @@ double ResonatorSolverSolar(int Mxyz,double *epsopt, double *grad, void *data)
     for (j=0; j<nky; j++)
       for (k =0; k<nkz; k++)
 	{
-	  double blochbc[3]={i*kxstep + kxbase*2*PI,j*kystep + kybase*2*PI,k*kzstep + kzbase*2*PI};
+	  double blochbc[3]={(i*kxstep + kxbase)*2*PI,(j*kystep + kybase)*2*PI,(k*kzstep + kzbase)*2*PI};
 	  double kldos;
 	  Vec kepsgrad;
 	  VecDuplicate(epsgrad,&kepsgrad);
@@ -317,7 +317,7 @@ double ldossolar(int numofvar,double *varopt, double *grad, void *data)
     for (j=0; j<nky; j++)
       for (k =0; k<nkz; k++)
 	{
-	  double blochbc[3]={i*kxstep+kxbase*2*PI,j*kystep+kybase*2*PI,k*kzstep+kzbase*2*PI};
+	  double blochbc[3]={(i*kxstep+kxbase)*2*PI,(j*kystep+kybase)*2*PI,(k*kzstep+kzbase)*2*PI};
 	  PetscPrintf(PETSC_COMM_WORLD,"Compute value at k-points (%f,%f,%f) \n", blochbc[0], blochbc[1], blochbc[2]);
 	  double kldos;
 	  SolarComputeKernel(epsCurrent, epsOmegasqr, epsOmegasqri, blochbc, &kldos, PETSC_NULL);

@@ -41,6 +41,9 @@ MPI_Comm comm_group, comm_sum;
 int weightappid; // 0 (0), eps (1), stepfun preferring low dielectric (2);
 double hw; // half width;
 
+/*---------globla variable for unit of k----------*/
+double Lx, Ly, Lz;
+
 /*some global variables declaration in Eps.c, not really needed. */
 int newQdef=0;
 int lrzsqr=0;
@@ -119,9 +122,14 @@ int main(int argc, char **argv)
   nkxyz = nkx * nky * nkz;
   
   //PetscOptionsGetReal(PETSC_NULL,"-kxstep",&kxstep,&flg);  MyCheckAndOutputDouble(flg,kxstep,"kxstep","kxstep");
-  kxstep = 1.0/(Nx*hx)/nkx;
-  kystep = 1.0/(Ny*hy)/nky;
-  kzstep = 1.0/(Nz*hz)/nkz;
+  Lx = Nx*hx;
+  Ly = Ny*hy;
+  Lz = Nz*hz;
+  PetscPrintf(PETSC_COMM_WORLD,"The actual size of your computational domain is %f by %f by %f \n",Lx,Ly,Lz);
+
+  kxstep = (1.0/Lx)/nkx;
+  kystep = (1.0/Ly)/nky;
+  kzstep = (1.0/Lz)/nkz;
   kxyzstep = (Nz==1)*kxstep*kystep + (Nz>1)*kxstep*kystep*kzstep;  
 
   PetscOptionsGetReal(PETSC_NULL,"-kxbase",&kxbase,&flg);  MyCheckAndOutputDouble(flg,kxbase,"kxbase","kxbase");

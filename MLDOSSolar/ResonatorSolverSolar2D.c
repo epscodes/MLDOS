@@ -33,6 +33,7 @@ extern MPI_Comm comm_group, comm_sum;
 extern int weightappid;
 extern double hw; //half width of my smoothed step function;
 
+extern double Lx, Ly, Lz;
 
 #undef __FUNCT__ 
 #define __FUNCT__ "ResonatorSolverSolar2D"
@@ -83,7 +84,7 @@ double ResonatorSolverSolar2D(int Mxyz,double *epsopt, double *grad, void *data)
 
 	  if (myid==0)
 	    {
-	      PetscPrintf(PETSC_COMM_SELF,"in step %d the kldos at at k-points (%f,%f,%f) is %.16e from group %d rank %d \n", count, blochbc[0]/(2*PI), blochbc[1]/(2*PI), blochbc[2]/(2*PI), kldos, mygroup, myrank);   
+	      PetscPrintf(PETSC_COMM_SELF,"in step %d the kldos at at k-points (%f,%f,%f) is %.16e from group %d rank %d \n", count, blochbc[0]/(2*PI/Lx), blochbc[1]/(2*PI/Ly), blochbc[2]/(2*PI/Lz), kldos, mygroup, myrank);   
 	    }
 	  //PetscPrintf(PETSC_COMM_WORLD,"in step %d the kldos at at k-points (%f,%f,%f) is %.16e \n", count, blochbc[0]/(2*PI), blochbc[1]/(2*PI), blochbc[2]/(2*PI), kldos);
 
@@ -423,10 +424,10 @@ double ldossolar2D(int Mxyz,double *varopt, double *grad, void *data)
       for (k =0; k<nkz; k++)
 	{
 	  double blochbc[3]={(i*kxstep+kxbase)*2*PI,(j*kystep+kybase)*2*PI,(k*kzstep+kzbase)*2*PI};
-	  PetscPrintf(PETSC_COMM_WORLD,"Compute value at k-points (%f,%f,%f) \n", blochbc[0]/(2*PI), blochbc[1]/(2*PI), blochbc[2]/(2*PI));
+	  PetscPrintf(PETSC_COMM_WORLD,"Compute value at k-points (%f,%f,%f) \n", blochbc[0]/(2*PI/Lx), blochbc[1]/(2*PI/Ly), blochbc[2]/(2*PI/Lz));
 	  double kldos;
 	  SolarComputeKernel2D(epsCurrent, epsOmegasqr, epsOmegasqri, blochbc, &kldos, PETSC_NULL);
-	  PetscPrintf(PETSC_COMM_WORLD,"in step %d the kldos at at k-points (%f,%f,%f) is %.16e \n", count, blochbc[0]/(2*PI), blochbc[1]/(2*PI), blochbc[2]/(2*PI), kldos);
+	  PetscPrintf(PETSC_COMM_WORLD,"in step %d the kldos at at k-points (%f,%f,%f) is %.16e \n", count, blochbc[0]/(2*PI/Lx), blochbc[1]/(2*PI/Ly), blochbc[2]/(2*PI/Lz), kldos);
 	  ldos += kldos;
 	}
 
