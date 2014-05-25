@@ -71,7 +71,7 @@ double ldoskernel(int DegFree,double *epsopt, double *grad, void *data)
   #if 1
   //clock_t tstart, tend;  int tpast; tstart=clock();  
   PetscLogDouble t1,t2,tpast;
-  ierr = PetscGetTime(&t1);CHKERRQ(ierr);
+  ierr = PetscTime(&t1);CHKERRQ(ierr);
   #endif
   /*-----------------KSP Solving------------------*/ 
 
@@ -122,7 +122,7 @@ double ldoskernel(int DegFree,double *epsopt, double *grad, void *data)
 
   /*--------------Finish KSP Solving---------------*/
 #if 1
-  ierr = PetscGetTime(&t2);CHKERRQ(ierr);
+  ierr = PetscTime(&t2);CHKERRQ(ierr);
   tpast = t2 - t1;
 
   int rank;
@@ -243,9 +243,9 @@ double ldoskernel(int DegFree,double *epsopt, double *grad, void *data)
 	VecPointwiseMult(nb,nb,weight);
 
 	// y = C*transpose(M) \ nb;
-	ierr = PetscGetTime(&t1);CHKERRQ(ierr);
+	ierr = PetscTime(&t1);CHKERRQ(ierr);
 	ierr = KSPSolveTranspose(ksp,nb,tmp);CHKERRQ(ierr);
-	ierr = PetscGetTime(&t2);CHKERRQ(ierr);
+	ierr = PetscTime(&t2);CHKERRQ(ierr);
 	tpast = t2 - t1;
 	if(rank==0)
 	  PetscPrintf(PETSC_COMM_SELF,"---The runing time for solving transpose is %f s \n",tpast);

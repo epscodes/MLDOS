@@ -58,7 +58,7 @@ double ldosmaxminnkernel(int DegFree,double *epsopt, double *grad, void *data)
 #if 1
   //clock_t tstart, tend;  int tpast; tstart=clock();  
   PetscLogDouble t1,t2,tpast;
-  ierr = PetscGetTime(&t1);CHKERRQ(ierr);
+  ierr = PetscTime(&t1);CHKERRQ(ierr);
 #endif
   /*-----------------KSP Solving------------------*/ 
 
@@ -87,7 +87,7 @@ double ldosmaxminnkernel(int DegFree,double *epsopt, double *grad, void *data)
 
   /*--------------Finish KSP Solving---------------*/
 #if 1
-  ierr = PetscGetTime(&t2);CHKERRQ(ierr);
+  ierr = PetscTime(&t2);CHKERRQ(ierr);
   tpast = t2 - t1;
   PetscPrintf(PETSC_COMM_WORLD,"---The runing time is %f s \n",tpast);
 #endif   

@@ -47,13 +47,13 @@ int SolarEigenvaluesSolver(Mat M, Vec epsCurrent, Vec epspmlQ, Mat D)
   EPSSetFromOptions(eps);
 
   PetscLogDouble t1, t2, tpast;
-  ierr = PetscGetTime(&t1);CHKERRQ(ierr);
+  ierr = PetscTime(&t1);CHKERRQ(ierr);
 
   ierr=EPSSolve(eps); CHKERRQ(ierr);
   EPSGetConverged(eps, &nconv); CHKERRQ(ierr);
   
   {
-    ierr = PetscGetTime(&t2);CHKERRQ(ierr);
+    ierr = PetscTime(&t2);CHKERRQ(ierr);
     tpast = t2 - t1;
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);

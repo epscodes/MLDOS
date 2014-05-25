@@ -182,7 +182,7 @@ int SolarComputeKernel(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, double
 #if 1
   //clock_t tstart, tend;  int tpast; tstart=clock();  
   PetscLogDouble t1,t2,tpast;
-  ierr = PetscGetTime(&t1);CHKERRQ(ierr);
+  ierr = PetscTime(&t1);CHKERRQ(ierr);
 #endif
 
   for (i=0; i<NJ; i++)
@@ -252,7 +252,7 @@ int SolarComputeKernel(Vec epsCurrent, Vec epsOmegasqr, Vec epsOmegasqri, double
     }
 
 #if 1
-  ierr = PetscGetTime(&t2);CHKERRQ(ierr);
+  ierr = PetscTime(&t2);CHKERRQ(ierr);
   tpast = t2 - t1;
 
   int rank;

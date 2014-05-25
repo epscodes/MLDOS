@@ -31,13 +31,13 @@ PetscErrorCode EigenSolver(int Linear, int Eig, int maxeigit)
   
   if (Linear==1)
     {      
-      ierr = PetscGetTime(&t1);CHKERRQ(ierr);
+      ierr = PetscTime(&t1);CHKERRQ(ierr);
       ierr = KSPSetOperators(ksp,M,M,SAME_NONZERO_PATTERN);CHKERRQ(ierr);
       ierr = KSPSolve(ksp,b,x);CHKERRQ(ierr);
       ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
       ierr = PetscPrintf(PETSC_COMM_WORLD,"--- the number of Kryolv Iterations for linear solver is %d----\n ",its);CHKERRQ(ierr);
       
-      ierr = PetscGetTime(&t2);CHKERRQ(ierr);
+      ierr = PetscTime(&t2);CHKERRQ(ierr);
       tpast = t2 - t1;
      
       MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -77,7 +77,7 @@ PetscErrorCode EigenSolver(int Linear, int Eig, int maxeigit)
   int i;  
   for (i=1;i<maxeigit;i++)
     {      
-      ierr = PetscGetTime(&t1);CHKERRQ(ierr);
+      ierr = PetscTime(&t1);CHKERRQ(ierr);
 
       if(i==1)
 	{ 
@@ -115,7 +115,7 @@ PetscErrorCode EigenSolver(int Linear, int Eig, int maxeigit)
 
 	}
 
-      ierr = PetscGetTime(&t2);CHKERRQ(ierr);
+      ierr = PetscTime(&t2);CHKERRQ(ierr);
       tpast = t2 - t1;
      
       MPI_Comm_rank(MPI_COMM_WORLD, &rank);
