@@ -1,10 +1,10 @@
 all: MLDOSEigCal
 
-export PETSC_DIR=${HOME}/MyLocal/petsc/petsc-3.3-p7
+export PETSC_DIR=${HOME}/MyLocal/petsc
 export PETSC_ARCH=arch-opt
 export CavityLibPath=../CodesForLibrary
 export C_INCLUDE_PATH=${HOME}/MyLocal/include
-export SLEPC_DIR=${HOME}/MyLocal/slepc/slepc-3.3-p4
+export SLEPC_DIR=${HOME}/MyLocal/slepc
 
 #include ${PETSC_DIR}/conf/variables
 #include ${PETSC_DIR}/conf/rules

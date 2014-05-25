@@ -1,10 +1,10 @@
 #! /bin/bash
 
-export PETSC_DIR=${HOME}/MyLocal/petsc/petsc-3.3-p7
+export PETSC_DIR=${HOME}/MyLocal/petsc
 export PETSC_ARCH=arch-opt
 export CavityLibPath=$PWD/CodesForLibrary
-#export SLEPC_DIR=/home/xdliang/MyLocal/slepc/slepc-3.1-p6
-export NloptLibPath=${HOME}/MyLocal/nlopt_0/.libs
+export SLEPC_DIR=/home/xdliang/MyLocal/slepc
+export NloptLibPath=${HOME}/MyLocal/nlopt/.libs
 export C_INCLUDE_PATH=${HOME}/MyLocal/include
 
 cd CodesForLibrary
@@ -24,7 +24,9 @@ make
 
 #cd ../MLDOSPre make clean make
 
-
+cd ../MLDOSEig
+make clean
+make
 
 
 

@@ -1,9 +1,9 @@
 #! /bin/bash
 
-export PETSC_DIR=/home/xdliang/MyLocal/petsc-dev
-export PETSC_ARCH=arch-debug
+export PETSC_DIR=/home/xdliang/MyLocal/petsc
+export PETSC_ARCH=arch-opt
 export CavityLibPath=$PWD/CodesForLibrary
-export NloptLibPath=${HOME}/MyLocal/nlopt_0/.libs
+export NloptLibPath=${HOME}/MyLocal/nlopt/.libs
 
 
 cd CodesForLibrary
@@ -18,9 +18,7 @@ rm *.h
 
 #cd ../MLDOSPOLXY/ make clean rm *.h
 
-cd ../MLDOSSolar/
-make clean
-rm *.[oh]
+#cd ../MLDOSSolar/ make clean rm *.[oh]
 
 #cd ../MLDOSPre/ make clean rm *.[oh]
 
