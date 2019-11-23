@@ -159,16 +159,16 @@ int main(int argc, char **argv)
   posj = (cx*Ny+ cy)*Nz + cz;
   PetscPrintf(PETSC_COMM_WORLD,"the posj is %d \n. ", posj);
 
-  int fixpteps;
+  int fixpteps; // an indicator whether we want to fix the dielectric constant at the center.
   PetscOptionsGetInt(PETSC_NULL,"-fixpteps",&fixpteps,&flg);  MyCheckAndOutputInt(flg,fixpteps,"fixpteps","fixpteps");
 
-  // Get minapproach;
+  // Get minapproach; //an indicator whether one want to minimizing the objective, instead of maximizing the objective
   PetscOptionsGetInt(PETSC_NULL,"-minapproach",&minapproach,&flg);  MyCheckAndOutputInt(flg,minapproach,"minapproach","minapproach");
    
-  // Get withepsinldos;
+  // Get withepsinldos; //an indicator whehter we want to include the epsion in the definition of ldos; 
   PetscOptionsGetInt(PETSC_NULL,"-withepsinldos",&withepsinldos,&flg);  MyCheckAndOutputInt(flg,withepsinldos,"withepsinldos","withepsinldos");
   
-  // Get outputbase;
+  // Get outputbase; // a parameter whether one want to output the structure at each optimization iteration.
   PetscOptionsGetInt(PETSC_NULL,"-outputbase",&outputbase,&flg);  MyCheckAndOutputInt(flg,outputbase,"outputbase","outputbase");
   // Get cavityverbose;
   PetscOptionsGetInt(PETSC_NULL,"-cavityverbose",&cavityverbose,&flg);
